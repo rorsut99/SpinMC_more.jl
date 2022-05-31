@@ -1,4 +1,4 @@
-module SpinMC
+module SpinMC_more
 
 include("UnitCell.jl")
 export UnitCell, addInteraction!, setInteractionOnsite!, setField!, addBasisSite!
