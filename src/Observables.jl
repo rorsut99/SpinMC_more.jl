@@ -13,7 +13,7 @@ mutable struct Observables
 end
 
 function Observables(lattice::T) where T<:Lattice
-    return Observables(ErrorPropagator(Float64), LogBinner(Float64), LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length))) 
+    return Observables(ErrorPropagator(Float64), LogBinner(Float64), LogBinner(Float64), LogBinner(Float64), LogBinner(Float64), LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length))) 
 end
 
 function performMeasurements!(observables::Observables, lattice::T, energy::Float64) where T<:Lattice
