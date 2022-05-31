@@ -78,3 +78,17 @@ function getCorrelation(lattice::Lattice{D,N}, spin::Int = 1) where {D,N}
     end
     return corr
 end
+                
+                
+function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N}) where {D,N}
+    ans = 0.0
+    for j in 1:length(lattice)
+        corr = zeros(length(lattice))
+        s0 = getSpin(lattice, j)
+        for i in 1:length(lattice)
+            corr[i] = s0[a]*getSpin(lattice, i)[b]
+        end
+        ans += sum(corr)
+    end
+    return ans
+end
