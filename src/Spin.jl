@@ -90,12 +90,13 @@ end
 # end
 
 function getSusceptibility(lattice::Lattice{D,N}) where {D,N}
-    chitens = zeros(3,3)
+    chitens = zeros(Float64,3,3)
     Sp = lattice.spins
     for j in 1:length(lattice)
             s0 = getSpin(lattice, j)
-            proxy = sum(s0 .* Sp , dims=2)
-            chitens[:,k] += proxy
+            for k in 1:3
+                chitens[:,k] += sum(s0[k] .* Sp , dims=2)
+            end
     end
     return chitens
 end
