@@ -83,9 +83,8 @@ end
 function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N}) where {D,N}
     ans = 0.0
     for j in 1:length(lattice)
-        corr = zeros(length(lattice))
-        s0 = getSpin(lattice, j)
-        ans += sum( [s0[a]*getSpin(lattice,i)[b] for i in 1:length(lattice) ] )
+        s0 = getSpin(lattice, j)[a]
+        ans += sum( [s0*getSpin(lattice,i)[b] for i in 1:length(lattice) ] )
     end
     return ans
 end
