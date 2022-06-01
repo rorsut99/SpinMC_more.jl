@@ -7,21 +7,24 @@ mutable struct Observables
     mx::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
     my::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
     mz::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
-    
-    chi_xx::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
-    chi_xz::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
-    chi_zx::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
-    chi_zz::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
+
+    chitens::LogBinner{Matrix{Float64},32,BinningAnalysis.Variance{Matrix{Float64}}}
+
+    # chi_xx::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
+    # chi_xz::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
+    # chi_zx::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
+    # chi_zz::LogBinner{Float64,32,BinningAnalysis.Variance{Float64}}
     #
     magnetizationVector::LogBinner{Vector{Float64},32,BinningAnalysis.Variance{Vector{Float64}}}
     correlation::LogBinner{Vector{Float64},32,BinningAnalysis.Variance{Vector{Float64}}}
 end
 
 function Observables(lattice::T) where T<:Lattice
-    return Observables(ErrorPropagator(Float64), LogBinner(Float64), 
+    return Observables(ErrorPropagator(Float64), LogBinner(Float64),
         LogBinner(Float64), LogBinner(Float64), LogBinner(Float64), #M components
-        LogBinner(Float64), LogBinner(Float64), LogBinner(Float64),LogBinner(Float64), #Chi tensor
-        LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length))) 
+        # LogBinner(Float64), LogBinner(Float64), LogBinner(Float64),LogBinner(Float64), #Chi tensor
+        LogBinner(zeros(Float64,3,3)) , # chi tensor
+        LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length)))
 end
 
 function performMeasurements!(observables::Observables, lattice::T, energy::Float64) where T<:Lattice
@@ -35,10 +38,11 @@ function performMeasurements!(observables::Observables, lattice::T, energy::Floa
     push!(observables.mx, m[1])
     push!(observables.my, m[2])
     push!(observables.mz, m[3])
-    push!(observables.chi_xx, getSusceptibility(1,1,lattice))
-    push!(observables.chi_xz, getSusceptibility(1,3,lattice))
-    push!(observables.chi_zx, getSusceptibility(3,1,lattice))
-    push!(observables.chi_zz, getSusceptibility(3,3,lattice))
+    push!(observables.chitens, getSusceptibility(lattice))
+    # push!(observables.chi_xx, getSusceptibility(1,1,lattice))
+    # push!(observables.chi_xz, getSusceptibility(1,3,lattice))
+    # push!(observables.chi_zx, getSusceptibility(3,1,lattice))
+    # push!(observables.chi_zz, getSusceptibility(3,3,lattice))
     #
     push!(observables.magnetizationVector, m)
 

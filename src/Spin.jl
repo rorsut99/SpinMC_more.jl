@@ -78,24 +78,28 @@ function getCorrelation(lattice::Lattice{D,N}, spin::Int = 1) where {D,N}
     end
     return corr
 end
-                
-                
-function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N}) where {D,N}
-    ans = 0.0
-    for j in 1:length(lattice)
-        s0 = getSpin(lattice, j)[a]
-        ans += sum( [s0*getSpin(lattice,i)[b] for i in 1:length(lattice) ] )
-    end
-    return ans
-end
-                
+
+
+# function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N}) where {D,N}
+#     ans = 0.0
+#     for j in 1:length(lattice)
+#         s0 = getSpin(lattice, j)[a]
+#         ans += sum( [s0*getSpin(lattice,i)[b] for i in 1:length(lattice) ] )
+#     end
+#     return ans
+# end
+
 function getSusceptibility(lattice::Lattice{D,N}) where {D,N}
     chitens = zeros(3,3)
-    Sp = lattice.spins 
+    Sp = lattice.spins
     for j in 1:length(lattice)
-          s0 = getSpin(lattice, j)[a]
-          proxy = s0 .* Sp 
-          chitens[k,1] = sum(proxy[k,:])
+            for k in 1:3
+                s0 = getSpin(lattice, j)[k]
+                proxy = s0 .* Sp
+                chitens[k,1] += sum(proxy[1,:])
+                chitens[k,2] += sum(proxy[2,:])
+                chitens[k,3] += sum(proxy[3,:])
+            end
     end
-    return ans
+    return chitens
 end

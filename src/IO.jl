@@ -23,7 +23,7 @@ function writeMonteCarlo(filename::String, mc::MonteCarlo{Lattice{D,N}}) where {
         f["mc/sweep"] = mc.sweep
 
         f["mc/lattice/L"] = array(mc.lattice.size)
-        for i in 1:D 
+        for i in 1:D
             f["mc/lattice/unitcell/primitive/"*string(i)] = array(mc.lattice.unitcell.primitive[i])
         end
         for i in 1:length(mc.lattice.unitcell.basis)
@@ -31,7 +31,7 @@ function writeMonteCarlo(filename::String, mc::MonteCarlo{Lattice{D,N}}) where {
             f["mc/lattice/unitcell/interactionsOnsite/"*string(i)] = mc.lattice.unitcell.interactionsOnsite[i]
             f["mc/lattice/unitcell/interactionsField/"*string(i)] = mc.lattice.unitcell.interactionsField[i]
         end
-        for i in 1:length(mc.lattice.unitcell.interactions) 
+        for i in 1:length(mc.lattice.unitcell.interactions)
             f["mc/lattice/unitcell/interactions/"*string(i)*"/b1"] = mc.lattice.unitcell.interactions[i][1]
             f["mc/lattice/unitcell/interactions/"*string(i)*"/b2"] = mc.lattice.unitcell.interactions[i][2]
             f["mc/lattice/unitcell/interactions/"*string(i)*"/offset"] = array(mc.lattice.unitcell.interactions[i][3])
@@ -54,14 +54,16 @@ function writeMonteCarlo(filename::String, mc::MonteCarlo{Lattice{D,N}}) where {
         f["mc/observables/my/error"] = std_error(mc.observables.my)
         f["mc/observables/mz/mean"] = mean(mc.observables.mz)
         f["mc/observables/mz/error"] = std_error(mc.observables.mz)
-        f["mc/observables/chi_xx/mean"] = mean(mc.observables.chi_xx)
-        f["mc/observables/chi_xx/error"] = std_error(mc.observables.chi_xx)
-        f["mc/observables/chi_xz/mean"] = mean(mc.observables.chi_xz)
-        f["mc/observables/chi_xz/error"] = std_error(mc.observables.chi_xz)
-        f["mc/observables/chi_zx/mean"] = mean(mc.observables.chi_zx)
-        f["mc/observables/chi_zx/error"] = std_error(mc.observables.chi_zx)
-        f["mc/observables/chi_zz/mean"] = mean(mc.observables.chi_zz)
-        f["mc/observables/chi_zz/error"] = std_error(mc.observables.chi_zz)
+        # f["mc/observables/chi_xx/mean"] = mean(mc.observables.chi_xx)
+        # f["mc/observables/chi_xx/error"] = std_error(mc.observables.chi_xx)
+        # f["mc/observables/chi_xz/mean"] = mean(mc.observables.chi_xz)
+        # f["mc/observables/chi_xz/error"] = std_error(mc.observables.chi_xz)
+        # f["mc/observables/chi_zx/mean"] = mean(mc.observables.chi_zx)
+        # f["mc/observables/chi_zx/error"] = std_error(mc.observables.chi_zx)
+        # f["mc/observables/chi_zz/mean"] = mean(mc.observables.chi_zz)
+        # f["mc/observables/chi_zz/error"] = std_error(mc.observables.chi_zz)
+        f["mc/observables/chitens/mean"] = mean(mc.observables.chitens)
+        f["mc/observables/chitens/error"] = std_error(mc.observables.chitens)
         #
         f["mc/observables/correlation/mean"] = mean(mc.observables.correlation)
         f["mc/observables/correlation/error"] = std_error(mc.observables.correlation)
