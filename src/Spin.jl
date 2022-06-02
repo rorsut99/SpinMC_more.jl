@@ -91,7 +91,7 @@ end
 
 function getSusceptibility(lattice::Lattice{D,N}) where {D,N}
     chitens = zeros(Float64,3,3)
-    mag = getMagnetization(lattice)
+    mag = length(lattice) .* getMagnetization(lattice)
     for k in 1:3
         for l in 1:3
             chitens[k,l] = mag[k]*mag[l]
