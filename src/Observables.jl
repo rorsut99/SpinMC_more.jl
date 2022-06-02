@@ -23,7 +23,7 @@ function Observables(lattice::T) where T<:Lattice
     return Observables(ErrorPropagator(Float64), LogBinner(Float64),
         LogBinner(Float64), LogBinner(Float64), LogBinner(Float64), #M components
         # LogBinner(Float64), LogBinner(Float64), LogBinner(Float64),LogBinner(Float64), #Chi tensor
-        LogBinner(zeros(Float64,2,2)) , # chi tensor
+        LogBinner(zeros(Float64,3,3)) , # chi tensor
         LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length)))
 end
 
@@ -36,7 +36,7 @@ function performMeasurements!(observables::Observables, lattice::T, energy::Floa
     push!(observables.magnetization, norm(m))
     #
     push!(observables.mx, m[1])
-    push!(observables.my, abs(m[2]))
+    push!(observables.my, m[2])
     push!(observables.mz, m[3])
     push!(observables.chitens, getSusceptibility(lattice))
     # push!(observables.chi_xx, getSusceptibility(1,1,lattice))
