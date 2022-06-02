@@ -96,7 +96,7 @@ function getSusceptibility(lattice::Lattice{D,N}) where {D,N}
     for j in 1:length(lattice)
             s0 = getSpin(lattice, j)
             for k in 1:2
-                chitens[:,k] += sum(s0[ind[k]] .* Sp , dims=2)
+                chitens[:,k] += sum(s0[indices[k]] .* Sp , dims=2)
             end
     end
     return chitens
