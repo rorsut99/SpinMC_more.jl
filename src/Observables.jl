@@ -28,7 +28,7 @@ function Observables(lattice::T) where T<:Lattice
         LogBinner(Float64), LogBinner(Float64), LogBinner(Float64), #M components
         # LogBinner(Float64), LogBinner(Float64), LogBinner(Float64),LogBinner(Float64), #Chi tensor
         LogBinner(zeros(Float64,3,3)) , # chi tensor
-        LogBinner(zeros(Float64,length(lattice))) , LogBinner(zeros(Float64,length(lattice))) , LogBinner(zeros(Float64,length(lattice))) , #lists
+        LogBinner(zeros(Float64,lattice.length)) , LogBinner(zeros(Float64,lattice.length)) , LogBinner(zeros(Float64,lattice.length)) , #lists
         LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length)))
 end
 
