@@ -64,6 +64,14 @@ function writeMonteCarlo(filename::String, mc::MonteCarlo{Lattice{D,N}}) where {
         # f["mc/observables/chi_zz/error"] = std_error(mc.observables.chi_zz)
         f["mc/observables/chitens/mean"] = mean(mc.observables.chitens)
         f["mc/observables/chitens/error"] = std_error(mc.observables.chitens)
+        
+        f["mc/observables/txlist/mean"] = mean(mc.observables.txlist)
+        f["mc/observables/txlist/error"] = std_error(mc.observables.txlist)
+        f["mc/observables/tylist/mean"] = mean(mc.observables.tylist)
+        f["mc/observables/tylist/error"] = std_error(mc.observables.tylist)
+        f["mc/observables/tzlist/mean"] = mean(mc.observables.tzlist)
+        f["mc/observables/tzlist/error"] = std_error(mc.observables.tzlist)
+        
         #
         f["mc/observables/correlation/mean"] = mean(mc.observables.correlation)
         f["mc/observables/correlation/error"] = std_error(mc.observables.correlation)
