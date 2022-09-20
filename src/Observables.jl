@@ -41,7 +41,7 @@ function performMeasurements!(observables::Observables, lattice::T, energy::Floa
     push!(observables.magnetization, norm(m))
     #
     push!(observables.mx, m[1])
-    push!(observables.my, m[2])
+    push!(observables.my, abs(m[2]))
     push!(observables.mz, m[3])
     push!(observables.chitens, getSusceptibility(lattice))
     # push!(observables.chi_xx, getSusceptibility(1,1,lattice))
