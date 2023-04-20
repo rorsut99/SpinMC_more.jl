@@ -1,4 +1,6 @@
-mutable struct Lattice{D,N}
+
+# Added dim variable to define dimension of spin vector
+mutable struct Lattice{D,N,dim}
     size::NTuple{D, Int} #linear extent of the lattice in number of unit cells
     length::Int #Number of sites N_sites
     unitcell::UnitCell{D}
@@ -9,11 +11,13 @@ mutable struct Lattice{D,N}
     interactionSites::Vector{NTuple{N,Int}} #list of length N_sites, for every site contains all interacting sites
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
-    interactionField::Vector{NTuple{3,Float64}} #list of length N_sites, for every site contains the local field
+    interactionField::Vector{NTuple{dim,Float64}} #list of length N_sites, for every site contains the local field
     Lattice(D,N) = new{D,N}()
 end
 
-function Lattice(uc::UnitCell{D}, L::NTuple{D,Int}) where D
+
+# Added dim variable to define dimension of spin vector
+function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
     #parse interactions
     ##For every basis site b, generate list of sites which b interacts with and store the corresponding interaction sites and matrices. 
     ##Interaction sites are specified by the target site's basis id, b_target, and the offset in units of primitive lattice vectors. 
@@ -84,7 +88,8 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int}) where D
     end
 
     #init spins 
-    lattice.spins = Array{Float64,2}(undef, 3, length(sites))
+    #Updated dimension of spins object
+    lattice.spins = Array{Float64,2}(undef, dim, length(sites))
 
     #write interactions to lattice
     lattice.interactionSites = repeat([ NTuple{Ninteractions,Int}(ones(Int,Ninteractions)) ], lattice.length)
@@ -142,13 +147,11 @@ function Base.length(lattice::Lattice{D,N}) where {D,N}
 end
 
 function getSpin(lattice::Lattice{D,N}, site::Int) where {D,N}
-    return (lattice.spins[1,site], lattice.spins[2,site], lattice.spins[3,site])
+    return (lattice.spins[:,site])
 end
 
-function setSpin!(lattice::Lattice{D,N}, site::Int, newState::Tuple{Float64,Float64,Float64}) where {D,N}
-    lattice.spins[1,site] = newState[1]
-    lattice.spins[2,site] = newState[2]
-    lattice.spins[3,site] = newState[3]
+function setSpin!(lattice::Lattice{D,N}, site::Int, newState::Vector{Float64}) where {D,N}
+    lattice.spins[:,site] = newState
 end
 
 function getSitePosition(lattice::Lattice{D,N}, site::Int)::NTuple{D,Float64} where {D,N}
