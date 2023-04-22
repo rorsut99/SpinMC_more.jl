@@ -1,11 +1,10 @@
 using Random
 using LinearAlgebra
 
-function uniformOnSphere(rng = Random.GLOBAL_RNG)
-    phi = 2.0 * pi * rand(rng)
-    z = 2.0 * rand(rng) - 1.0;
-    r = sqrt(1.0 - z * z)
-    return (r * cos(phi), r * sin(phi), z)
+# Updated function returns a 'dim' dimensional vector of random complex numbers, divided by the norm
+function uniformOnSphere(dim,rng = Random.GLOBAL_RNG)
+    a=rand(Complex{Float64}, dim)
+    return (a/=LinearAlgebra.norm(a))
 end
 
 function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
