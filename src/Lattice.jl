@@ -140,38 +140,38 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
     return lattice
 end
 
-function Base.size(lattice::Lattice{D,N}) where {D,N}
+function Base.size(lattice::Lattice{D,N,dim}) where {D,N}
     return lattice.size
 end
 
-function Base.length(lattice::Lattice{D,N}) where {D,N}
+function Base.length(lattice::Lattice{D,N,dim}) where {D,N}
     return lattice.length
 end
 
-function getSpin(lattice::Lattice{D,N}, site::Int) where {D,N}
+function getSpin(lattice::Lattice{D,N,dim}, site::Int) where {D,N}
     return (lattice.spins[:,site])
 end
 
-function setSpin!(lattice::Lattice{D,N}, site::Int, newState::Vector{ComplexF64}) where {D,N}
+function setSpin!(lattice::Lattice{D,N,dim}, site::Int, newState::Vector{ComplexF64}) where {D,N}
     lattice.spins[:,site] = newState
 end
 
-function getSitePosition(lattice::Lattice{D,N}, site::Int)::NTuple{D,Float64} where {D,N}
+function getSitePosition(lattice::Lattice{D,N,dim}, site::Int)::NTuple{D,Float64} where {D,N}
     return lattice.sitePositions[site]
 end
 
-function getInteractionSites(lattice::Lattice{D,N}, site::Int)::NTuple{N,Int} where {D,N}
+function getInteractionSites(lattice::Lattice{D,N,dim}, site::Int)::NTuple{N,Int} where {D,N}
     return lattice.interactionSites[site]
 end
 
-function getInteractionMatrices(lattice::Lattice{D,N}, site::Int)::NTuple{N,InteractionMatrix} where {D,N}
+function getInteractionMatrices(lattice::Lattice{D,N,dim}, site::Int)::NTuple{N,InteractionMatrix} where {D,N}
     return lattice.interactionMatrices[site]
 end
 
-function getInteractionOnsite(lattice::Lattice{D,N}, site::Int)::InteractionMatrix where {D,N}
+function getInteractionOnsite(lattice::Lattice{D,N,dim}, site::Int)::InteractionMatrix where {D,N}
     return lattice.interactionOnsite[site]
 end
 
-function getInteractionField(lattice::Lattice{D,N}, site::Int)::NTuple{dim,Float64} where {D,N}
+function getInteractionField(lattice::Lattice{D,N,dim}, site::Int)::NTuple{dim,Float64} where {D,N}
     return lattice.interactionField[site]
 end

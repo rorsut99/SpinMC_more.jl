@@ -3,15 +3,26 @@ using LinearAlgebra
 
 # Updated function returns a 'dim' dimensional vector of random complex numbers, divided by the norm
 function uniformOnSphere(dim,rng = Random.GLOBAL_RNG)
-    a=rand(Complex{Float64}, dim)
-    return (a/=LinearAlgebra.norm(a))
+    vec=rand(Complex{Float64}, dim)
+    return (vec/=LinearAlgebra.norm(a))
+end
+
+# Created function to propose update of spin state
+function proposeUpdate(s1,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG)
+    genIn=rand(1:dim)
+    gen=lattice.generators[genIn]
+
+    phi = 2.0 * pi * rand(rng)
+    rot=exp(1im*phi*gen)
+
+    return (rot*s1)
 end
 
 function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
     return s1[1] * (M.m11 * s2[1] + M.m12 * s2[2] + M.m13 * s2[3]) + s1[2] * (M.m21 * s2[1] + M.m22 * s2[2] + M.m23 * s2[3]) + s1[3] * (M.m31 * s2[1] + M.m32 * s2[2] + M.m33 * s2[3])
 end
 
-function getEnergy(lattice::Lattice{D,N})::Float64 where {D,N}
+function getEnergy(lattice::Lattice{D,N,dim})::Float64 where {D,N}
     energy = 0.0
 
     for site in 1:length(lattice)
@@ -36,7 +47,8 @@ function getEnergy(lattice::Lattice{D,N})::Float64 where {D,N}
     return energy
 end
 
-function getEnergyDifference(lattice::Lattice{D,N}, site::Int, newState::Tuple{Float64,Float64,Float64})::Float64 where {D,N}
+#Updated to expect a vector of complex numbers for newState
+function getEnergyDifference(lattice::Lattice{D,N,dim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N}
     dE = 0.0
     oldState = getSpin(lattice, site)
     ds = newState .- oldState
@@ -58,7 +70,7 @@ function getEnergyDifference(lattice::Lattice{D,N}, site::Int, newState::Tuple{F
     return dE
 end
 
-function getMagnetization(lattice::Lattice{D,N}) where {D,N}
+function getMagnetization(lattice::Lattice{D,N,dim}) where {D,N}
     mx, my, mz = 0.0, 0.0, 0.0
     for i in 1:length(lattice)
         spin = getSpin(lattice, i)
@@ -69,7 +81,7 @@ function getMagnetization(lattice::Lattice{D,N}) where {D,N}
     return [mx, my, mz] / length(lattice)
 end
 
-function getCorrelation(lattice::Lattice{D,N}, spin::Int = 1) where {D,N}
+function getCorrelation(lattice::Lattice{D,N,dim}, spin::Int = 1) where {D,N}
     corr = zeros(length(lattice))
     s0 = getSpin(lattice, spin)
     for i in 1:length(lattice)
@@ -79,7 +91,7 @@ function getCorrelation(lattice::Lattice{D,N}, spin::Int = 1) where {D,N}
 end
 
 
-# function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N}) where {D,N}
+# function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N,dim}) where {D,N}
 #     ans = 0.0
 #     for j in 1:length(lattice)
 #         s0 = getSpin(lattice, j)[a]
@@ -88,7 +100,7 @@ end
 #     return ans
 # end
 
-function getSusceptibility(lattice::Lattice{D,N}) where {D,N}
+function getSusceptibility(lattice::Lattice{D,N,dim}) where {D,N}
     chitens = zeros(Float64,3,3)
     mag = length(lattice) .* getMagnetization(lattice)
     for k in 1:3
