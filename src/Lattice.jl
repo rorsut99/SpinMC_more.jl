@@ -6,7 +6,7 @@ mutable struct Lattice{D,N,dim}
     unitcell::UnitCell{D}
     sitePositions::Vector{NTuple{D,Float64}}
 
-    spins::Matrix{Float64} #3*N_sites matrix containing the spin configuration
+    spins::Matrix{ComplexF64} #3*N_sites matrix containing the spin configuration
 
     interactionSites::Vector{NTuple{N,Int}} #list of length N_sites, for every site contains all interacting sites
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
@@ -95,7 +95,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
     lattice.interactionSites = repeat([ NTuple{Ninteractions,Int}(ones(Int,Ninteractions)) ], lattice.length)
     lattice.interactionMatrices = repeat([ NTuple{Ninteractions,InteractionMatrix}(repeat([InteractionMatrix()],Ninteractions)) ], lattice.length)
     lattice.interactionOnsite = repeat([InteractionMatrix()], lattice.length)
-    lattice.interactionField = repeat([(0.0,0.0,0.0)], lattice.length)
+    lattice.interactionField = repeat(zeros(dim), lattice.length)
 
     function applyPBC(n, L)
         while n < 0; n += L end
@@ -114,7 +114,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
         lattice.interactionOnsite[i] = InteractionMatrix(uc.interactionsOnsite[b])
 
         #field interaction
-        lattice.interactionField[i] = NTuple{3,Float64}(uc.interactionsField[b])
+        lattice.interactionField[i] = NTuple{dim,Float64}(uc.interactionsField[b])
 
         #two-spin interactions
         interactionSites = repeat([i], Ninteractions)
@@ -150,7 +150,7 @@ function getSpin(lattice::Lattice{D,N}, site::Int) where {D,N}
     return (lattice.spins[:,site])
 end
 
-function setSpin!(lattice::Lattice{D,N}, site::Int, newState::Vector{Float64}) where {D,N}
+function setSpin!(lattice::Lattice{D,N}, site::Int, newState::Vector{ComplexF64}) where {D,N}
     lattice.spins[:,site] = newState
 end
 
@@ -170,6 +170,6 @@ function getInteractionOnsite(lattice::Lattice{D,N}, site::Int)::InteractionMatr
     return lattice.interactionOnsite[site]
 end
 
-function getInteractionField(lattice::Lattice{D,N}, site::Int)::NTuple{3,Float64} where {D,N}
+function getInteractionField(lattice::Lattice{D,N}, site::Int)::NTuple{dim,Float64} where {D,N}
     return lattice.interactionField[site]
 end
