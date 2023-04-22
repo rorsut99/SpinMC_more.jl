@@ -1,5 +1,6 @@
 
 # Added dim variable to define dimension of spin vector
+# Note, as written, dim=N^2-1  
 mutable struct Lattice{D,N,dim}
     size::NTuple{D, Int} #linear extent of the lattice in number of unit cells
     length::Int #Number of sites N_sites
@@ -12,6 +13,7 @@ mutable struct Lattice{D,N,dim}
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
     interactionField::Vector{NTuple{dim,Float64}} #list of length N_sites, for every site contains the local field
+    generators::Vector{Matrix{ComplexF64}} #list of length dim holding generators for the SU(N) representation of interest
     Lattice(D,N) = new{D,N}()
 end
 
