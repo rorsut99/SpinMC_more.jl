@@ -8,7 +8,8 @@ function uniformOnSphere(dim,rng = Random.GLOBAL_RNG)
 end
 
 # Created function to propose update of spin state
-function proposeUpdate(s1,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG)
+function proposeUpdate(dite,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG)
+    s1=getSpin(lattice, site)
     genIn=rand(1:dim)
     gen=lattice.generators[genIn]
 
