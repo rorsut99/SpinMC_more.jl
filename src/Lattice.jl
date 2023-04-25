@@ -14,7 +14,9 @@ mutable struct Lattice{D,N,dim}
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
     interactionField::Vector{NTuple{dim,Float64}} #list of length N_sites, for every site contains the local field
     generators::Vector{Matrix{ComplexF64}} #list of length dim holding generators for the SU(N) representation of interest
-    Lattice(D,N) = new{D,N}()
+
+    expVals::Vector{Size,Vector{D,Vector{dim,Float64}}}
+    Lattice(D,N,dim) = new{D,N,dim}()
 end
 
 

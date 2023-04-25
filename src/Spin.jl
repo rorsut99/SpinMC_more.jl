@@ -8,7 +8,7 @@ function uniformOnSphere(dim,rng = Random.GLOBAL_RNG)
 end
 
 # Created function to propose update of spin state
-function proposeUpdate(dite,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG)
+function proposeUpdate(site,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG)
     s1=getSpin(lattice, site)
     genIn=rand(1:dim)
     gen=lattice.generators[genIn]
@@ -17,6 +17,24 @@ function proposeUpdate(dite,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_R
     rot=exp(1im*phi*gen)
 
     return (rot*s1)
+end
+
+# Created function to calculate inner product
+function calcInnerProd(s1,gen,s2)
+    res=gen*s2
+    s3=conj(s1)
+    return(dot(s3,res))
+end
+
+#Created function to return vector of expctation values of all generators for a site
+function genExpVals(s1,lattice::Lattice{D,N,dim},dim)
+    vals=zeros(dim)
+    i=0
+    for mat in lattice.generators
+        vals[i]=calcInnerProd(s1,mat,s1)
+        i+=1
+    end
+    return(vals)
 end
 
 function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
