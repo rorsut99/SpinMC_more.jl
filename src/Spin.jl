@@ -37,22 +37,27 @@ function genExpVals(s1,lattice::Lattice{D,N,dim},dim)
     return(vals)
 end
 
+# this is shorter but redundant
 function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
-    return s1[1] * (M.m11 * s2[1] + M.m12 * s2[2] + M.m13 * s2[3]) + s1[2] * (M.m21 * s2[1] + M.m22 * s2[2] + M.m23 * s2[3]) + s1[3] * (M.m31 * s2[1] + M.m32 * s2[2] + M.m33 * s2[3])
+    return calcInnerProd(s1, M, s2)
 end
 
+# calculates energy in terms of exp values vectors
 function getEnergy(lattice::Lattice{D,N,dim})::Float64 where {D,N}
     energy = 0.0
 
     for site in 1:length(lattice)
-        s0 = getSpin(lattice, site)
+        # get vector of exp values for site
+        s0 = genExpVals(getSpin(lattice, site), lattice, dim)
 
         #two-spin interactions
         interactionSites = getInteractionSites(lattice, site)
         interactionMatrices = getInteractionMatrices(lattice, site)
         for i in 1:length(interactionSites)
+            # get vector of exp values for interaction site
+            s1 = genExpVals(getSpin(lattice, interactionSites[i]), lattice, dim)
             if site > interactionSites[i]
-                energy += exchangeEnergy(s0, interactionMatrices[i], getSpin(lattice, interactionSites[i]))
+                energy += exchangeEnergy(s0, interactionMatrices[i], s1)
             end
         end
 
