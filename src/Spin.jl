@@ -43,7 +43,7 @@ function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
 end
 
 # calculates energy in terms of exp values vectors
-function getEnergy(lattice::Lattice{D,N,dim})::Float64 where {D,N}
+function getEnergy(lattice::Lattice{D,N,dim})::Float64 where {D,N,dim}
     energy = 0.0
 
     for site in 1:length(lattice)
@@ -72,7 +72,7 @@ function getEnergy(lattice::Lattice{D,N,dim})::Float64 where {D,N}
 end
 
 #Updated to expect a vector of complex numbers for newState
-function getEnergyDifference(lattice::Lattice{D,N,dim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N}
+function getEnergyDifference(lattice::Lattice{D,N,dim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N,dim}
     dE = 0.0
     oldState = getSpin(lattice, site)
     ds = newState .- oldState
@@ -94,7 +94,7 @@ function getEnergyDifference(lattice::Lattice{D,N,dim}, site::Int, newState::Vec
     return dE
 end
 
-function getMagnetization(lattice::Lattice{D,N,dim}) where {D,N}
+function getMagnetization(lattice::Lattice{D,N,dim}) where {D,N,dim}
     mx, my, mz = 0.0, 0.0, 0.0
     for i in 1:length(lattice)
         spin = getSpin(lattice, i)
@@ -105,7 +105,7 @@ function getMagnetization(lattice::Lattice{D,N,dim}) where {D,N}
     return [mx, my, mz] / length(lattice)
 end
 
-function getCorrelation(lattice::Lattice{D,N,dim}, spin::Int = 1) where {D,N}
+function getCorrelation(lattice::Lattice{D,N,dim}, spin::Int = 1) where {D,N,dim}
     corr = zeros(length(lattice))
     s0 = getSpin(lattice, spin)
     for i in 1:length(lattice)
@@ -115,7 +115,7 @@ function getCorrelation(lattice::Lattice{D,N,dim}, spin::Int = 1) where {D,N}
 end
 
 
-# function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N,dim}) where {D,N}
+# function getSusceptibility(a::Int , b::Int , lattice::Lattice{D,N,dim}) where {D,N,dim}
 #     ans = 0.0
 #     for j in 1:length(lattice)
 #         s0 = getSpin(lattice, j)[a]
@@ -124,7 +124,7 @@ end
 #     return ans
 # end
 
-function getSusceptibility(lattice::Lattice{D,N,dim}) where {D,N}
+function getSusceptibility(lattice::Lattice{D,N,dim}) where {D,N,dim}
     chitens = zeros(Float64,3,3)
     mag = length(lattice) .* getMagnetization(lattice)
     for k in 1:3
