@@ -146,7 +146,7 @@ end
 
 function finalState!(lattice::Lattice{D,N,dim},L::NTuple{D,Int}) where {D,N,dim}
     expVals::Vector{N,Vector{dim^2-1,Float64}}
-    for site 1:length(lattice)
+    for site in 1:length(lattice)
         s1=getSpin(lattice,site)
         vec=genExpVals(s1,lattice,dim)
         expVals[site]=vec
