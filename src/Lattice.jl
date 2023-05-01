@@ -13,7 +13,7 @@ mutable struct Lattice{D,N,dim}
     interactionSites::Vector{NTuple{N,Int}} #list of length N_sites, for every site contains all interacting sites
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
-    interactionField::Vector{NTuple{dim,Float64}} #list of length N_sites, for every site contains the local field
+    interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
     generators::Vector{Matrix{ComplexF64}} #list of length dim^2-1 holding generators for the SU(N) representation of interest
 
     expVals::Vector{Vector{Float64}}
@@ -57,7 +57,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
     Ninteractions = findmax([ length(interactionTargetSites[i]) for i in 1:length(uc.basis) ])[1]
 
     #create lattice struct
-    lattice = Lattice(D,Ninteractions)
+    lattice = Lattice(D,Ninteractions,dim)
     lattice.size = L
     lattice.length = prod(L) * length(uc.basis)
     lattice.unitcell = uc
@@ -98,9 +98,9 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
 
     #write interactions to lattice
     lattice.interactionSites = repeat([ NTuple{Ninteractions,Int}(ones(Int,Ninteractions)) ], lattice.length)
-    lattice.interactionMatrices = repeat([ NTuple{Ninteractions,InteractionMatrix}(repeat([InteractionMatrix()],Ninteractions)) ], lattice.length)
-    lattice.interactionOnsite = repeat([InteractionMatrix()], lattice.length)
-    lattice.interactionField = repeat(zeros(dim), lattice.length)
+    lattice.interactionMatrices = repeat([ NTuple{Ninteractions,InteractionMatrix}(repeat([InteractionMatrix(dim)],Ninteractions)) ], lattice.length)
+    lattice.interactionOnsite = repeat([InteractionMatrix(dim)], lattice.length)
+    lattice.interactionField = repeat( [Tuple(zeros(dim^2-1))], lattice.length)
 
     function applyPBC(n, L)
         while n < 0; n += L end
@@ -123,7 +123,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
 
         #two-spin interactions
         interactionSites = repeat([i], Ninteractions)
-        interactionMatrices = repeat([InteractionMatrix()], Ninteractions)
+        interactionMatrices = repeat([InteractionMatrix(dim)], Ninteractions)
         for j in 1:Ninteractions
             if j <= length(interactionTargetSites[b])
                 b2, offset, M = interactionTargetSites[b][j]
@@ -138,7 +138,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
         lattice.interactionSites[i] = NTuple{Ninteractions,Int}(interactionSites)
         lattice.interactionMatrices[i] = NTuple{Ninteractions,InteractionMatrix}(interactionMatrices)
     end
-
+    lattice.generators=[Matrix(1.0I,dim,dim)]
     #return lattice
     return lattice
 end
@@ -177,4 +177,17 @@ end
 
 function getInteractionField(lattice::Lattice{D,N,dim}, site::Int)::NTuple{dim,Float64} where {D,N,dim}
     return lattice.interactionField[site]
+end
+
+function addGenerator!(lattice::Lattice{D,N,dim},M::Matrix{ComplexF64},dim) where {D,N}
+    size(M) == (dim,dim) || error(string("Generator must be of size ",dim,"x",dim,"."))
+
+    if (length(lattice.generators)==dim^2-1)
+        lattice.generators[1]=M
+    else
+        push!(lattice.generators,M)
+    end
+
+
+
 end

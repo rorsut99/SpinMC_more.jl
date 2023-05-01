@@ -16,15 +16,15 @@ Adds an interaction between spin1 located at basis site `b1` of the given `unitc
 The exchange energy is calculated as spin1'.M.spin2. 
 """
 #Changed hard coded '3' to dim--dimension of spin vector
-function addInteraction!(unitcell::UnitCell{D}, b1::Int, b2::Int, M::Matrix{Float64}, offset::NTuple{D,Int}=Tuple(zeros(Int,D)),dim::Int) where D
-    size(M) == (dim,dim) || error(string("Interaction matrix must be of size ",dim,"x",dim,"."))
+function addInteraction!(unitcell::UnitCell{D}, b1::Int, b2::Int, M::Matrix{Float64},dim::Int, offset::NTuple{D,Int}=Tuple(zeros(Int,D))) where D
+    size(M) == (dim^2-1,dim^2-1) || error(string("Interaction matrix must be of size ",dim^2-1,"x",dim^2-1,"."))
     b1 == b2 && offset == Tuple(zeros(Int,D)) && error("Interaction cannot be local. Use setInteractionOnsite!() instead.")
 
     push!(unitcell.interactions, (b1,b2,offset,M))
 end
 
 function setInteractionOnsite!(unitcell::UnitCell{D}, b::Int, M::Matrix{Float64},dim::Int) where D
-    size(M) == (dim,dim) || error(string("Interaction matrix must be of size",dim,"x",dim,"."))
+    size(M) == (dim^2-1,dim^2-1) || error(string("Interaction matrix must be of size",dim,"x",dim,"."))
     unitcell.interactionsOnsite[b] = M
 end
 

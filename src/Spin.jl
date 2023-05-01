@@ -2,13 +2,13 @@ using Random
 using LinearAlgebra
 
 # Updated function returns a 'dim' dimensional vector of random complex numbers, divided by the norm
-function uniformOnSphere(dim,rng = Random.GLOBAL_RNG)
+function uniformOnSphere(dim)
     vec=rand(Complex{Float64}, dim)
-    return (vec/=LinearAlgebra.norm(a))
+    return (vec/=LinearAlgebra.norm(vec))
 end
 
 # Created function to propose update of spin state
-function proposeUpdate(site,dim,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG)
+function proposeUpdate(site,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG) where {D,N,dim} 
     s1=getSpin(lattice, site)
     genIn=rand(1:dim)
     gen=lattice.generators[genIn]
@@ -21,15 +21,13 @@ end
 
 # Created function to calculate inner product
 function calcInnerProd(s1,gen,s2)
-    res=gen*s2
-    s3=conj(s1)
-    return(dot(s3,res))
+    return real(dot(s1,gen*s2))
 end
 
 #Created function to return vector of expctation values of all generators for a site
-function genExpVals(s1,lattice::Lattice{D,N,dim},dim)
-    vals=zeros(dim)
-    i=0
+function genExpVals(s1,lattice::Lattice{D,N,dim},dim) where {D,N} 
+    vals=zeros(dim^2-1)
+    i=1
     for mat in lattice.generators
         vals[i]=calcInnerProd(s1,mat,s1)
         i+=1
@@ -39,7 +37,7 @@ end
 
 # this is shorter but redundant
 function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
-    return calcInnerProd(s1, M, s2)
+    return calcInnerProd(s1, M.mat, s2)
 end
 
 # calculates energy in terms of exp values vectors
@@ -48,24 +46,24 @@ function getEnergy(lattice::Lattice{D,N,dim})::Float64 where {D,N,dim}
 
     for site in 1:length(lattice)
         # get vector of exp values for site
-        s0 = genExpVals(getSpin(lattice, site), lattice, dim)
+        s0 = genExpVals(getSpin(lattice, site), lattice,dim)
 
         #two-spin interactions
         interactionSites = getInteractionSites(lattice, site)
         interactionMatrices = getInteractionMatrices(lattice, site)
         for i in 1:length(interactionSites)
             # get vector of exp values for interaction site
-            s1 = genExpVals(getSpin(lattice, interactionSites[i]), lattice, dim)
+            s1 = genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim)
             if site > interactionSites[i]
                 energy += exchangeEnergy(s0, interactionMatrices[i], s1)
             end
         end
 
         #onsite interaction
-        energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
+       # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
 
         #field interaction
-        energy += dot(s0, getInteractionField(lattice, site))
+        #energy += dot(s0, getInteractionField(lattice, site))
     end
 
     return energy
@@ -75,21 +73,26 @@ end
 function getEnergyDifference(lattice::Lattice{D,N,dim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N,dim}
     dE = 0.0
     oldState = getSpin(lattice, site)
-    ds = newState .- oldState
+
+    s1=genExpVals(newState,lattice,dim)
+    s2=genExpVals(oldState,lattice,dim)
+    ds = s1 .- s2
+
+
 
     #two-spin interactions
     interactionSites = getInteractionSites(lattice, site)
     interactionMatrices = getInteractionMatrices(lattice, site)
     for i in 1:length(interactionSites)
-        dE += exchangeEnergy(ds, interactionMatrices[i], getSpin(lattice, interactionSites[i]))
+        dE += exchangeEnergy(ds, interactionMatrices[i],  genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim))
     end
 
     #onsite interaction
-    interactionOnsite = getInteractionOnsite(lattice, site)
-    dE += exchangeEnergy(newState, interactionOnsite, newState) - exchangeEnergy(oldState, interactionOnsite, oldState)
+    #interactionOnsite = getInteractionOnsite(lattice, site)
+    #dE += exchangeEnergy(newState, interactionOnsite, newState) - exchangeEnergy(oldState, interactionOnsite, oldState)
 
     #field interaction
-    dE += dot(ds, getInteractionField(lattice, site))
+    #dE += dot(ds, getInteractionField(lattice, site))
 
     return dE
 end
@@ -144,14 +147,14 @@ function getSusceptibility(lattice::Lattice{D,N,dim}) where {D,N,dim}
 end
 
 
-function finalState!(lattice::Lattice{D,N,dim},L::NTuple{D,Int}) where {D,N,dim}
-    expVals::Vector{N,Vector{dim^2-1,Float64}}
+function finalState!(lattice::Lattice{D,N,dim},dim) where {D,N}
+    expVals=Vector{Vector{Float64}}(undef,length(lattice))
     for site in 1:length(lattice)
         s1=getSpin(lattice,site)
         vec=genExpVals(s1,lattice,dim)
         expVals[site]=vec
     end
-    push!(lattice.expVals,expVals)
+    lattice.expVals=expVals
 
 end
                 
