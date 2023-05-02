@@ -29,6 +29,7 @@ mutable struct MonteCarlo{T<:Lattice,U<:AbstractRNG}
     seed::UInt
     sweep::Int
 
+    energySeries::Vector{Float64}
     observables::Observables
 end
 
@@ -45,7 +46,7 @@ function MonteCarlo(
     seed::UInt = rand(Random.RandomDevice(),UInt)
     ) where T<:Lattice where U<:AbstractRNG
 
-    mc = MonteCarlo(deepcopy(lattice), beta, thermalizationSweeps, measurementSweeps, measurementRate, replicaExchangeRate, reportInterval, checkpointInterval, rng, seed, 0, Observables(lattice))
+    mc = MonteCarlo(deepcopy(lattice), beta, thermalizationSweeps, measurementSweeps, measurementRate, replicaExchangeRate, reportInterval, checkpointInterval, rng, seed, 0,zeros(thermalizationSweeps+measurementSweeps), Observables(lattice))
     Random.seed!(mc.rng, mc.seed)
     
     return mc
@@ -152,6 +153,10 @@ function run!(mc::MonteCarlo{T}; outfile::Union{String,Nothing}=nothing) where T
                 performMeasurements!(mc.observables, mc.lattice, energy)
             end
         end
+
+     
+        mc.energySeries[mc.sweep+1]=energy/length(lattice)
+
 
         #increment sweep
         statistics.sweeps += 1

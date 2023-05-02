@@ -98,15 +98,13 @@ function getEnergyDifference(lattice::Lattice{D,N,dim}, site::Int, newState::Vec
     return dE
 end
 
-function getMagnetization(lattice::Lattice{D,N,dim}) where {D,N,dim}
-    mx, my, mz = 0.0, 0.0, 0.0
+function getMagnetization(lattice::Lattice{D,N,dim},d) where {D,N,dim}
+    mag = zeros(d^2-1)
     for i in 1:length(lattice)
-        spin = getSpin(lattice, i)
-        mx += spin[1]
-        my += spin[2]
-        mz += spin[3]
+        spin = genExpVals(getSpin(lattice, i),lattice,d)
+        mag+=spin
     end
-    return [mx, my, mz] / length(lattice)
+    return mag / length(lattice)
 end
 
 function getCorrelation(lattice::Lattice{D,N,dim}, spin::Int = 1) where {D,N,dim}
