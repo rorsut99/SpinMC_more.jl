@@ -37,24 +37,24 @@ function performMeasurements!(observables::Observables, lattice::T, energy::Floa
     push!(observables.energy, energy / length(lattice), energy * energy / (length(lattice) * length(lattice)))
 
     #measure magnetization
-    m = getMagnetization(lattice)
-    push!(observables.magnetization, norm(m))
+    #m = getMagnetization(lattice)
+    #push!(observables.magnetization, norm(m))
     #
-    push!(observables.mx, m[1])
-    push!(observables.my, abs(m[2]))
-    push!(observables.mz, m[3])
-    push!(observables.chitens, getSusceptibility(lattice))
+    #push!(observables.mx, m[1])
+    #push!(observables.my, abs(m[2]))
+    #push!(observables.mz, m[3])
+    #push!(observables.chitens, getSusceptibility(lattice))
     # push!(observables.chi_xx, getSusceptibility(1,1,lattice))
     # push!(observables.chi_xz, getSusceptibility(1,3,lattice))
     # push!(observables.chi_zx, getSusceptibility(3,1,lattice))
     # push!(observables.chi_zz, getSusceptibility(3,3,lattice))
     #
-    push!(observables.magnetizationVector, m)
+    #push!(observables.magnetizationVector, m)
     
-    push!(observables.txlist, lattice.spins[1,:])
-    push!(observables.tylist, lattice.spins[2,:])
-    push!(observables.tzlist, lattice.spins[3,:])
+    #push!(observables.txlist, lattice.spins[1,:])
+    #push!(observables.tylist, lattice.spins[2,:])
+    #push!(observables.tzlist, lattice.spins[3,:])
 
     #measure spin correlations
-    push!(observables.correlation, getCorrelation(lattice))
+    #push!(observables.correlation, getCorrelation(lattice))
 end

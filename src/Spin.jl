@@ -8,10 +8,11 @@ function uniformOnSphere(dim)
 end
 
 # Created function to propose update of spin state
-function proposeUpdate(site,lattice::Lattice{D,N,dim}, rng = Random.GLOBAL_RNG) where {D,N,dim} 
+function proposeUpdate(site,lattice::Lattice{D,N,dim},d, rng = Random.GLOBAL_RNG) where {D,N,dim} 
     s1=getSpin(lattice, site)
-    genIn=rand(1:dim)
+    genIn=rand(1:d^2-1)
     gen=lattice.generators[genIn]
+
 
     phi = 2.0 * pi * rand(rng)
     rot=exp(1im*phi*gen)
@@ -25,8 +26,8 @@ function calcInnerProd(s1,gen,s2)
 end
 
 #Created function to return vector of expctation values of all generators for a site
-function genExpVals(s1,lattice::Lattice{D,N,dim},dim) where {D,N} 
-    vals=zeros(dim^2-1)
+function genExpVals(s1,lattice::Lattice{D,N,dim},d) where {D,N,dim} 
+    vals=zeros(d^2-1)
     i=1
     for mat in lattice.generators
         vals[i]=calcInnerProd(s1,mat,s1)
@@ -147,11 +148,11 @@ function getSusceptibility(lattice::Lattice{D,N,dim}) where {D,N,dim}
 end
 
 
-function finalState!(lattice::Lattice{D,N,dim},dim) where {D,N}
+function finalState!(lattice::Lattice{D,N,dim},d) where {D,N,dim}
     expVals=Vector{Vector{Float64}}(undef,length(lattice))
     for site in 1:length(lattice)
         s1=getSpin(lattice,site)
-        vec=genExpVals(s1,lattice,dim)
+        vec=genExpVals(s1,lattice,d)
         expVals[site]=vec
     end
     lattice.expVals=expVals

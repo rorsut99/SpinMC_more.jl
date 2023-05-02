@@ -16,6 +16,7 @@ mutable struct Lattice{D,N,dim}
     interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
     generators::Vector{Matrix{ComplexF64}} #list of length dim^2-1 holding generators for the SU(N) representation of interest
 
+
     expVals::Vector{Vector{Float64}}
     Lattice(D,N,dim) = new{D,N,dim}()
 end
@@ -139,8 +140,24 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
         lattice.interactionMatrices[i] = NTuple{Ninteractions,InteractionMatrix}(interactionMatrices)
     end
     lattice.generators=[Matrix(1.0I,dim,dim)]
+
     #return lattice
     return lattice
+end
+
+function addGenerator!(lattice::Lattice{D,N,dim},M::Matrix{ComplexF64},d::Int64) where {D,N,dim}
+    size(M) == (d,d) || error(string("Generator must be of size ",d,"x",d,"."))
+
+    if (length(lattice.generators)==d^2-1)
+        lattice.generators[1]=M
+
+    else
+        push!(lattice.generators,M)
+
+    end
+
+
+
 end
 
 function Base.size(lattice::Lattice{D,N,dim}) where {D,N,dim}
@@ -179,15 +196,3 @@ function getInteractionField(lattice::Lattice{D,N,dim}, site::Int)::NTuple{dim,F
     return lattice.interactionField[site]
 end
 
-function addGenerator!(lattice::Lattice{D,N,dim},M::Matrix{ComplexF64},dim) where {D,N}
-    size(M) == (dim,dim) || error(string("Generator must be of size ",dim,"x",dim,"."))
-
-    if (length(lattice.generators)==dim^2-1)
-        lattice.generators[1]=M
-    else
-        push!(lattice.generators,M)
-    end
-
-
-
-end

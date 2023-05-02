@@ -100,7 +100,7 @@ function run!(mc::MonteCarlo{T}; outfile::Union{String,Nothing}=nothing) where T
             site = rand(mc.rng, 1:length(mc.lattice))
 
             #propose new spin configuration
-            newSpinState = proposeUpdate(site,dim,mc.lattice)
+            newSpinState = proposeUpdate(site,mc.lattice,dim)
             energyDifference = getEnergyDifference(mc.lattice, site, newSpinState)
 
             #check acceptance of new configuration
