@@ -80,6 +80,7 @@ function run!(mc::MonteCarlo{T}; outfile::Union{String,Nothing}=nothing) where T
     #init spin configuration
     if mc.sweep == 0
         for i in 1:length(mc.lattice)
+            # dim is not defined locally
             setSpin!(mc.lattice, i, uniformOnSphere(dim))
         end
     end
@@ -155,7 +156,7 @@ function run!(mc::MonteCarlo{T}; outfile::Union{String,Nothing}=nothing) where T
         end
 
      
-        mc.energySeries[mc.sweep+1]=energy/length(lattice)
+        mc.energySeries[mc.sweep+1]=energy/length(mc.lattice)
 
 
         #increment sweep
