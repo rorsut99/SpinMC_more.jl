@@ -11,101 +11,113 @@ using LinearAlgebra
 using Suppressor
 using Plots
 
-dim=3
-dim2=dim^2-1
+function makeGenerators(dim::Int)
+    # produce generator matrices for different dim
+    if (dim==2)
+        # Pauli matrices
+        sx=[0+0.0im 1.0+0im 
+            1.0+0im 0+0im]
+        sy=[0 -1.0im
+            1.0im 0]
+        sz=[1.0+0im 0
+            0 -1.0+0im]
 
+        # calculate norm
+        norm = sx^2 + sy^2 + sz^2
 
-a1=(1.0,0.0,0.0)
-a2=(0.0,1.0,0.0)
-a3=(0.0,0.0,1.0)
-uc = UnitCell(a1,a2,a3)
-addBasisSite!(uc,(0.0,0.0,0.0),dim)
-addInteraction!(uc,1,1,Matrix(-1.0I,dim2,dim2),dim,(1,0,0))
-addInteraction!(uc,1,1,Matrix(-1.0I,dim2,dim2),dim,(0,1,0))
-addInteraction!(uc,1,1,Matrix(-1.0I,dim2,dim2),dim,(0,0,1))
+        generators = [sx, sy, sz]/sqrt(norm[1])
 
+    elseif (dim==3)
+        # Gell-Mann matrices
+        sx=[0+0.0im 1.0+0im  0
+            1.0+0im 0+0im 0
+            0 0 0]
+        sy=[0 -1.0im 0
+            1.0im 0 0
+            0 0 0 ]
+        sz=[1.0+0im 0 0
+            0 -1.0+0im 0
+            0 0 0  ]
+        s4=[0+0im 0 1.0
+            0 0 0
+            1.0 0 0]
+        s5=[0 0 -1.0im
+            0 0 0
+            1.0im 0 0]
+        s6=[0+0.0im 0 0
+            0 0 1.0
+            0 1.0 0]
+        s7=[0 0 0
+            0 0 -1.0im
+            0 1.0im 0]
+        s8=[1.0+0im 0 0
+            0 1.0 0
+            0 0 -2.0]/sqrt(3)
 
-Lsize=(6,6,6)
-lattice=Lattice(uc,Lsize,dim)
+        # calculate norm
+        norm = sx^2 + sy^2 + sz^2 + s4^2 + s5^2 + s6^2 + s7^2 + s8^2
 
+        generators = [sx, sy, sz, s4, s5, s6, s7, s8]/sqrt(norm[1])
+    end
 
-norm3=sqrt(4)
-norm2=sqrt(3)
+    return generators
+end
 
-# sx=[0+0.0im 1.0+0im 
-#     1.0+0im 0+0im]/norm2
+function makeLattice(dim::Int, dim2::Int)
 
-# sy=[0 -1.0im
-#     1.0im 0 ]/norm2
+    # define cubic lattice with Heisenberg interaction
+    a1=(1.0,0.0,0.0)
+    a2=(0.0,1.0,0.0)
+    a3=(0.0,0.0,1.0)
+    uc = UnitCell(a1,a2,a3)
+    FMint = Matrix(-1.0I,dim2,dim2)      # Heisenberg interaction
+    AFMint = Matrix(1.0I,dim2,dim2)      # Heisenberg interaction
+    addBasisSite!(uc,(0.0,0.0,0.0),dim)
+    # nearest neighbour interaction
+    addInteraction!(uc,1,1,AFMint,dim,(1,0,0))
+    addInteraction!(uc,1,1,AFMint,dim,(0,1,0))
+    addInteraction!(uc,1,1,AFMint,dim,(0,0,1))
+    Lsize=(6,6,6)       # size of lattice
+    lattice=Lattice(uc,Lsize,dim)
 
-# sz=[1.0+0im 0
-#     0 -1.0+0im  ]/norm2
+    generators = makeGenerators(dim)
 
-sx=[0+0.0im 1.0+0im  0
-    1.0+0im 0+0im 0
-    0 0 0]/(norm3)
+    # push generators to lattice struct
+    for gen in generators
+        addGenerator!(lattice,gen,dim)
+    end
 
-sy=[0 -1.0im 0
-    1.0im 0 0
-    0 0 0 ]/(norm3)
+    return lattice
+end
 
-sz=[1.0+0im 0 0
-    0 -1.0+0im 0
-    0 0 0  ]/(norm3)
+function runMC()
+    # define dimensions
+    dim=2           # dimension of wavefunction (N)
+    dim2=dim^2-1    # dimension of spin vector (N^2-1)
+    # set sweeps
+    thermSweeps=1000
+    sampleSweeps=1000
+    T = 1000.0
+    lattice = makeLattice(dim, dim2)
 
-s4=[0+0im 0 1.0
-0 0 0
-1.0 0 0]/(norm3)
+    # run Monte Carlo sweeps
+    m=MonteCarlo(lattice,T,thermSweeps,sampleSweeps)
+    @suppress run!(m,dim)
+    e,e2=means(m.observables.energy)
 
-s5=[0 0 -1.0im
-0 0 0
-1.0im 0 0]/(norm3)
+    # print magnetization
+    print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
 
-s6=[0+0.0im 0 0
-0 0 1.0
-0  1.0 0]/(norm3)
+    # print energy
+    print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
 
-s7=[0 0 0
-0 0 -1.0im
-0 1.0im 0]/(norm3)
+    # plot energy vs sweeps
+    title = string("SU(", dim, ") FM interaction")
+    plot(m.energySeries, title=title)
+    xlabel!("sweeps")
+    ylabel!("energy density")
+end
 
-s8=[1.0+0im 0 0
-0 1.0 0
-0 0 -2.0]/(sqrt(3)*norm3)
-
-# sum=sx^2+sy^2+sz^2
-# print(sum)
-
-addGenerator!(lattice,sx,dim)
-addGenerator!(lattice,sy,dim)
-addGenerator!(lattice,sz,dim)
-addGenerator!(lattice,s4,dim)
-addGenerator!(lattice,s5,dim)
-addGenerator!(lattice,s6,dim)
-addGenerator!(lattice,s7,dim)
-addGenerator!(lattice,s8,dim)
-
-
-
-thermSweeps=1000
-sampleSweeps=1000
-
-
-m=MonteCarlo(lattice,100.0,thermSweeps,sampleSweeps)
-@suppress run!(m)
-print(m.observables.energy)
-print("\n")
-e,e2=means(m.observables.energy)
-
-print("\n")
-print(getMagnetization(m.lattice,dim))
-
-
-
-print(e,e2)
-print("\n")
-
-plot(m.energySeries)
-
+runMC()
 
 

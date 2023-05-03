@@ -52,7 +52,7 @@ function MonteCarlo(
     return mc
 end
 
-function run!(mc::MonteCarlo{T}; outfile::Union{String,Nothing}=nothing) where T<:Lattice
+function run!(mc::MonteCarlo{T}, dim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
     #init MPI
     rank = 0
     commSize = 1

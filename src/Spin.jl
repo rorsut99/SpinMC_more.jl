@@ -107,6 +107,19 @@ function getMagnetization(lattice::Lattice{D,N,dim},d) where {D,N,dim}
     return mag / length(lattice)
 end
 
+function getAFMMagnetization(lattice::Lattice{D,N,dim},d) where {D,N,dim}
+    mag = zeros(d^2-1)
+    for i in 1:length(lattice)
+        if i % 2 == 0
+            spin = genExpVals(getSpin(lattice, i),lattice,d)
+        else
+            spin = -1*genExpVals(getSpin(lattice, i),lattice,d)
+        end
+        mag+=spin
+    end
+    return mag / length(lattice)
+end
+
 function getCorrelation(lattice::Lattice{D,N,dim}, spin::Int = 1) where {D,N,dim}
     corr = zeros(length(lattice))
     s0 = getSpin(lattice, spin)
