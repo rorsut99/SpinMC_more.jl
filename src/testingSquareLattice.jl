@@ -6,6 +6,7 @@ include("Observables.jl")
 include("MonteCarlo.jl")
 include("Helper.jl")
 include("IO.jl")
+include("Phonon.jl")
 
 using LinearAlgebra
 using Suppressor
@@ -94,6 +95,9 @@ function runMC()
     # define dimensions
     dim=2           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
+
+    phdim=3
+    
     # set sweeps
     thermSweeps=1000
     sampleSweeps=1000

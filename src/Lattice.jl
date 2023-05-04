@@ -1,7 +1,7 @@
 
 # Added dim variable to define dimension of spin vector
 
-mutable struct Lattice{D,N,dim}
+mutable struct Lattice{D,N,dim,phdim}
     size::NTuple{D, Int} #linear extent of the lattice in number of unit cells
     length::Int #Number of sites N_sites
     unitcell::UnitCell{D}
@@ -9,6 +9,8 @@ mutable struct Lattice{D,N,dim}
 
     spins::Matrix{ComplexF64} #3*N_sites matrix containing the spin configuration
     phonons::Matrix{Float64}
+    phononCoupling::Matrix{Float64}
+    springConstants::Vector{Float64}
 
     interactionSites::Vector{NTuple{N,Int}} #list of length N_sites, for every site contains all interacting sites
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
@@ -18,12 +20,12 @@ mutable struct Lattice{D,N,dim}
 
 
     expVals::Vector{Vector{Float64}}
-    Lattice(D,N,dim) = new{D,N,dim}()
+    Lattice(D,N,dim,phdim) = new{D,N,dim,phdim}()
 end
 
 
 # Added dim variable to define dimension of spin vector
-function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
+function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
     #parse interactions
     ##For every basis site b, generate list of sites which b interacts with and store the corresponding interaction sites and matrices. 
     ##Interaction sites are specified by the target site's basis id, b_target, and the offset in units of primitive lattice vectors. 
@@ -96,6 +98,11 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
     #init spins 
     #Updated dimension of spins object
     lattice.spins = Array{Float64,2}(undef, dim, length(sites))
+    lattice.phonons = Array{Float64,2}(undef, phdim, length(sites))
+
+    lattice.springConstants = zeros(phdim)
+
+    lattice.phononCoupling =  Array{Float64,2}(undef, phdim, dim^2-1)
 
     #write interactions to lattice
     lattice.interactionSites = repeat([ NTuple{Ninteractions,Int}(ones(Int,Ninteractions)) ], lattice.length)
@@ -145,7 +152,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int) where D
     return lattice
 end
 
-function addGenerator!(lattice::Lattice{D,N,dim},M::Matrix{ComplexF64},d::Int64) where {D,N,dim}
+function addGenerator!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::Int64) where {D,N,dim,phdim}
     size(M) == (d,d) || error(string("Generator must be of size ",d,"x",d,"."))
 
     if (length(lattice.generators)==d^2-1)
@@ -155,44 +162,54 @@ function addGenerator!(lattice::Lattice{D,N,dim},M::Matrix{ComplexF64},d::Int64)
         push!(lattice.generators,M)
 
     end
-
-
-
 end
 
-function Base.size(lattice::Lattice{D,N,dim}) where {D,N,dim}
+function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::Int64,phd::Int64) where {D,N,dim,phdim}
+    size(M) == (phd,d^2-1) || error(string("Coupling matrix must be of size ",phd,"x",d^2-1,"."))
+
+    lattice.phononCoupling=M
+end
+
+function addSpringConstant(lattice::Lattice{D,N,dim,phdim},vec::Vector{Float64},phd::Int64) where {D,N,dim,phdim}
+    size(vec) == (phd) || error(string("Spring constants must be of size ",phd,"."))
+
+    lattice.springConstants=vec
+end
+
+
+function Base.size(lattice::Lattice{D,N,dim,phdim}) where {D,N,dim,phdim}
     return lattice.size
 end
 
-function Base.length(lattice::Lattice{D,N,dim}) where {D,N,dim}
+function Base.length(lattice::Lattice{D,N,dim,phdim}) where {D,N,dim,phdim}
     return lattice.length
 end
 
-function getSpin(lattice::Lattice{D,N,dim}, site::Int) where {D,N,dim}
+function getSpin(lattice::Lattice{D,N,dim,phdim}, site::Int) where {D,N,dim,phdim}
     return (lattice.spins[:,site])
 end
 
-function setSpin!(lattice::Lattice{D,N,dim}, site::Int, newState::Vector{ComplexF64}) where {D,N,dim}
+function setSpin!(lattice::Lattice{D,N,dim,phdim}, site::Int, newState::Vector{ComplexF64}) where {D,N,dim,phdim}
     lattice.spins[:,site] = newState
 end
 
-function getSitePosition(lattice::Lattice{D,N,dim}, site::Int)::NTuple{D,Float64} where {D,N,dim}
+function getSitePosition(lattice::Lattice{D,N,dim,phdim}, site::Int)::NTuple{D,Float64} where {D,N,dim,phdim}
     return lattice.sitePositions[site]
 end
 
-function getInteractionSites(lattice::Lattice{D,N,dim}, site::Int)::NTuple{N,Int} where {D,N,dim}
+function getInteractionSites(lattice::Lattice{D,N,dim,phdim}, site::Int)::NTuple{N,Int} where {D,N,dim,phdim}
     return lattice.interactionSites[site]
 end
 
-function getInteractionMatrices(lattice::Lattice{D,N,dim}, site::Int)::NTuple{N,InteractionMatrix} where {D,N,dim}
+function getInteractionMatrices(lattice::Lattice{D,N,dim,phdim}, site::Int)::NTuple{N,InteractionMatrix} where {D,N,dim,phdim}
     return lattice.interactionMatrices[site]
 end
 
-function getInteractionOnsite(lattice::Lattice{D,N,dim}, site::Int)::InteractionMatrix where {D,N,dim}
+function getInteractionOnsite(lattice::Lattice{D,N,dim,phdim}, site::Int)::InteractionMatrix where {D,N,dim,phdim}
     return lattice.interactionOnsite[site]
 end
 
-function getInteractionField(lattice::Lattice{D,N,dim}, site::Int)::NTuple{dim,Float64} where {D,N,dim}
+function getInteractionField(lattice::Lattice{D,N,dim,phdim}, site::Int)::NTuple{dim,Float64} where {D,N,dim,phdim}
     return lattice.interactionField[site]
 end
 
