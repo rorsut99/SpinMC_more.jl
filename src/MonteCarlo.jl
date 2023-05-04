@@ -52,7 +52,7 @@ function MonteCarlo(
     return mc
 end
 
-function run!(mc::MonteCarlo{T}, dim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
+function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
     #init MPI
     rank = 0
     commSize = 1
@@ -82,6 +82,7 @@ function run!(mc::MonteCarlo{T}, dim::Int; outfile::Union{String,Nothing}=nothin
         for i in 1:length(mc.lattice)
             # dim is not defined locally
             setSpin!(mc.lattice, i, uniformOnSphere(dim))
+            setPhonon!(mc.lattice, i, uniformDist(phdim, mc.lattice.Qmax))
         end
     end
 
@@ -103,13 +104,31 @@ function run!(mc::MonteCarlo{T}, dim::Int; outfile::Union{String,Nothing}=nothin
 
             #propose new spin configuration
             newSpinState = proposeUpdate(site,mc.lattice,dim)
-            energyDifference = getEnergyDifference(mc.lattice, site, newSpinState)
+            energyDifference = getSpinEnergyDifference(mc.lattice, site, newSpinState)
 
             #check acceptance of new configuration
             statistics.attemptedLocalUpdates += 1
             p = exp(-mc.beta * energyDifference)
             if (rand(mc.rng) < min(1.0, p))
                 setSpin!(mc.lattice, site, newSpinState)
+                energy += energyDifference
+                statistics.acceptedLocalUpdates += 1
+            end
+        end
+
+        for i in 1:length(mc.lattice)
+            #select random spin
+            site = rand(mc.rng, 1:length(mc.lattice))
+
+            #propose new spin configuration
+            newPhState = uniformDist(phdim, mc.lattice.Qmax)
+            energyDifference = getPhononEnergyDifference(mc.lattice, site, newPhState)
+
+            #check acceptance of new configuration
+            statistics.attemptedLocalUpdates += 1
+            p = exp(-mc.beta * energyDifference)
+            if (rand(mc.rng) < min(1.0, p))
+                setPhonon!(mc.lattice,site,newPhState)
                 energy += energyDifference
                 statistics.acceptedLocalUpdates += 1
             end

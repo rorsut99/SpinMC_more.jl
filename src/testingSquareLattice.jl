@@ -64,7 +64,7 @@ function makeGenerators(dim::Int)
     return generators
 end
 
-function makeLattice(dim::Int, dim2::Int)
+function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     # define cubic lattice with Heisenberg interaction
     a1=(1.0,0.0,0.0)
@@ -73,13 +73,14 @@ function makeLattice(dim::Int, dim2::Int)
     uc = UnitCell(a1,a2,a3)
     FMint = Matrix(-1.0I,dim2,dim2)      # Heisenberg interaction
     AFMint = Matrix(1.0I,dim2,dim2)      # Heisenberg interaction
+    Zero = Matrix(0.0I,dim2,dim2)
     addBasisSite!(uc,(0.0,0.0,0.0),dim)
     # nearest neighbour interaction
-    addInteraction!(uc,1,1,AFMint,dim,(1,0,0))
-    addInteraction!(uc,1,1,AFMint,dim,(0,1,0))
-    addInteraction!(uc,1,1,AFMint,dim,(0,0,1))
+    addInteraction!(uc,1,1,FMint,dim,(1,0,0))
+    addInteraction!(uc,1,1,FMint,dim,(0,1,0))
+    addInteraction!(uc,1,1,FMint,dim,(0,0,1))
     Lsize=(6,6,6)       # size of lattice
-    lattice=Lattice(uc,Lsize,dim)
+    lattice=Lattice(uc,Lsize,dim,phdim)
 
     generators = makeGenerators(dim)
 
@@ -87,6 +88,14 @@ function makeLattice(dim::Int, dim2::Int)
     for gen in generators
         addGenerator!(lattice,gen,dim)
     end
+
+    spring = [1.0, 2.0, 4.0, 5.0]
+    mat = [0.0 0 0 0
+           0 0.0 0 0
+           0 0 0.0 0]
+
+    addSpringConstant!(lattice, spring, phdim)
+    addPhononInteraction!(lattice, mat, dim, phdim)
 
     return lattice
 end
@@ -96,17 +105,18 @@ function runMC()
     dim=2           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
-    phdim=3
-    
+    phdim=4
+
     # set sweeps
-    thermSweeps=1000
-    sampleSweeps=1000
+    thermSweeps=2000
+    sampleSweeps=2000
     T = 1000.0
-    lattice = makeLattice(dim, dim2)
+    lattice = makeLattice(dim, dim2, phdim)
+    lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
     m=MonteCarlo(lattice,T,thermSweeps,sampleSweeps)
-    @suppress run!(m,dim)
+    run!(m,dim, phdim)
     e,e2=means(m.observables.energy)
 
     # print magnetization

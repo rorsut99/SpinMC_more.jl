@@ -11,6 +11,7 @@ mutable struct Lattice{D,N,dim,phdim}
     phonons::Matrix{Float64}
     phononCoupling::Matrix{Float64}
     springConstants::Vector{Float64}
+    Qmax::Float64
 
     interactionSites::Vector{NTuple{N,Int}} #list of length N_sites, for every site contains all interacting sites
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
@@ -60,7 +61,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
     Ninteractions = findmax([ length(interactionTargetSites[i]) for i in 1:length(uc.basis) ])[1]
 
     #create lattice struct
-    lattice = Lattice(D,Ninteractions,dim)
+    lattice = Lattice(D,Ninteractions,dim,phdim)
     lattice.size = L
     lattice.length = prod(L) * length(uc.basis)
     lattice.unitcell = uc
@@ -164,14 +165,14 @@ function addGenerator!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::
     end
 end
 
-function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::Int64,phd::Int64) where {D,N,dim,phdim}
-    size(M) == (phd,d^2-1) || error(string("Coupling matrix must be of size ",phd,"x",d^2-1,"."))
+function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},M::Matrix{Float64},d::Int64,phd::Int64) where {D,N,dim,phdim}
+    size(M) == (d^2-1,phd) || error(string("Coupling matrix must be of size ",d^2-1,"x",phd,"."))
 
     lattice.phononCoupling=M
 end
 
-function addSpringConstant(lattice::Lattice{D,N,dim,phdim},vec::Vector{Float64},phd::Int64) where {D,N,dim,phdim}
-    size(vec) == (phd) || error(string("Spring constants must be of size ",phd,"."))
+function addSpringConstant!(lattice::Lattice{D,N,dim,phdim},vec::Vector{Float64},phd::Int64) where {D,N,dim,phdim}
+    length(vec) == (phd) || error(string("Spring constants must be of size ",phd,"."))
 
     lattice.springConstants=vec
 end

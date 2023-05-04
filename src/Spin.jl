@@ -48,6 +48,7 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim})::Float64 where {D,N,dim,phdi
     for site in 1:length(lattice)
         # get vector of exp values for site
         s0 = genExpVals(getSpin(lattice, site), lattice,dim)
+        p0 = getPhonon(lattice, site)
 
         #two-spin interactions
         interactionSites = getInteractionSites(lattice, site)
@@ -60,6 +61,9 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim})::Float64 where {D,N,dim,phdi
             end
         end
 
+        energy += phononPotentialEnergy(lattice, p0)
+        energy += spinPhononCoupling(lattice, s0, p0)
+
         #onsite interaction
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
 
@@ -71,7 +75,7 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim})::Float64 where {D,N,dim,phdi
 end
 
 #Updated to expect a vector of complex numbers for newState
-function getEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N,dim,phdim}
+function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N,dim,phdim}
     dE = 0.0
     oldState = getSpin(lattice, site)
 
@@ -79,7 +83,7 @@ function getEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newStat
     s2=genExpVals(oldState,lattice,dim)
     ds = s1 .- s2
 
-
+    p1 = getPhonon(lattice, site)
 
     #two-spin interactions
     interactionSites = getInteractionSites(lattice, site)
@@ -87,6 +91,29 @@ function getEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newStat
     for i in 1:length(interactionSites)
         dE += exchangeEnergy(ds, interactionMatrices[i],  genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim))
     end
+
+    dE += (spinPhononCoupling(lattice, s1, p1) - spinPhononCoupling(lattice, s2, p1))
+
+    #onsite interaction
+    #interactionOnsite = getInteractionOnsite(lattice, site)
+    #dE += exchangeEnergy(newState, interactionOnsite, newState) - exchangeEnergy(oldState, interactionOnsite, oldState)
+
+    #field interaction
+    #dE += dot(ds, getInteractionField(lattice, site))
+
+    return dE
+end
+
+function getPhononEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newPhState::Vector{Float64})::Float64 where {D,N,dim,phdim}
+    dE = 0.0
+    oldState = getSpin(lattice, site)
+
+    s2=genExpVals(oldState,lattice,dim)
+
+    p1 = getPhonon(lattice, site)
+
+    dE += (phononPotentialEnergy(lattice, newPhState) - phononPotentialEnergy(lattice, p1))
+    dE += (spinPhononCoupling(lattice, s2, newPhState) - spinPhononCoupling(lattice, s2, p1))
 
     #onsite interaction
     #interactionOnsite = getInteractionOnsite(lattice, site)
