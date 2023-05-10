@@ -82,7 +82,7 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
         for i in 1:length(mc.lattice)
             # dim is not defined locally
             setSpin!(mc.lattice, i, uniformOnSphere(dim))
-            setPhonon!(mc.lattice, i, uniformDist(phdim, mc.lattice.Qmax))
+            #setPhonon!(mc.lattice, i, uniformDist(phdim, mc.lattice.Qmax))
         end
     end
 
@@ -116,23 +116,23 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
             end
         end
 
-        for i in 1:length(mc.lattice)
-            #select random spin
-            site = rand(mc.rng, 1:length(mc.lattice))
+        # for i in 1:length(mc.lattice)
+        #     #select random spin
+        #     site = rand(mc.rng, 1:length(mc.lattice))
 
-            #propose new spin configuration
-            newPhState = uniformDist(phdim, mc.lattice.Qmax)
-            energyDifference = getPhononEnergyDifference(mc.lattice, site, newPhState)
+        #     #propose new spin configuration
+        #     #newPhState = uniformDist(phdim, mc.lattice.Qmax)
+        #     #energyDifference = getPhononEnergyDifference(mc.lattice, site, newPhState)
 
-            #check acceptance of new configuration
-            statistics.attemptedLocalUpdates += 1
-            p = exp(-mc.beta * energyDifference)
-            if (rand(mc.rng) < min(1.0, p))
-                setPhonon!(mc.lattice,site,newPhState)
-                energy += energyDifference
-                statistics.acceptedLocalUpdates += 1
-            end
-        end
+        #     #check acceptance of new configuration
+        #     #statistics.attemptedLocalUpdates += 1
+        #     # p = exp(-mc.beta * energyDifference)
+        #     # if (rand(mc.rng) < min(1.0, p))
+        #     #     setPhonon!(mc.lattice,site,newPhState)
+        #     #     energy += energyDifference
+        #     #     statistics.acceptedLocalUpdates += 1
+        #     # end
+        # end
         statistics.sweeps += 1
 
         #perform replica exchange

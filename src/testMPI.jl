@@ -11,6 +11,7 @@ include("Phonon.jl")
 using LinearAlgebra
 using Suppressor
 using Plots
+using MPI
 
 function makeGenerators(dim::Int)
     # produce generator matrices for different dim
@@ -99,13 +100,24 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
            0.0 0 0 0
            0 0.0 0 0]
 
-    addSpringConstant!(lattice, spring, phdim)
-    addPhononInteraction!(lattice, mat, dim, phdim)
+    #addSpringConstant!(lattice, spring, phdim)
+    #addPhononInteraction!(lattice, mat, dim, phdim)
 
     return lattice
 end
 
 function runMC()
+
+
+    MPI.Initialized() || MPI.Init()
+    commSize = MPI.Comm_size(MPI.COMM_WORLD)
+    commRank = MPI.Comm_rank(MPI.COMM_WORLD)
+
+    tmin = 0.1
+    tmax = 10.0
+    beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
+
+
     # define dimensions
     dim=3           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
@@ -120,25 +132,13 @@ function runMC()
     lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
-    m=MonteCarlo(lattice,T,thermSweeps,sampleSweeps)
-    run!(m,dim, phdim)
+    m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,replicaExchangeRate=10)
+    run!(m,dim, phdim,outfile="simulation.h5")
     e,e2=means(m.observables.energy)
 
-    # print magnetization
-    print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
 
-    # print energy
-    print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
-
-    # plot energy vs sweeps
-    title = string("SU(", dim, ") FM interaction")
-    plot(m.energySeries, title=title)
-    xlabel!("sweeps")
-    ylabel!("energy density")
 
     return(lattice)
 end
 
 lattice=runMC()
-
-

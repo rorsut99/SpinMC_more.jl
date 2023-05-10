@@ -196,4 +196,22 @@ function finalState!(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
     lattice.expVals=expVals
 
 end
+
+
+function decomposeMat(lattice::Lattice{D,N,dim,phdim},mat::Matrix{ComplexF64},d) where {D,N,dim,phdim}
+    mats=copy(lattice.generators)
+
+    push!(mats,(Matrix((1.0+0.0im)I,dim,dim)))
+
+    sols= vec(mat)
+    eqs= Array{ComplexF64}(undef,d^2,d^2)
+
+
+    for i in 1:d^2
+        for j in 1:d^2
+            eqs[i,j]=mats[j][i]
+        end
+    end
+    return (eqs\sols)
+end
                 

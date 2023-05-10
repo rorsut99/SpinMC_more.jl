@@ -19,6 +19,8 @@ mutable struct Lattice{D,N,dim,phdim}
     interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
     generators::Vector{Matrix{ComplexF64}} #list of length dim^2-1 holding generators for the SU(N) representation of interest
 
+    spinOperators::Vector{Matrix{ComplexF64}}
+
 
     expVals::Vector{Vector{Float64}}
     Lattice(D,N,dim,phdim) = new{D,N,dim,phdim}()
@@ -148,6 +150,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
         lattice.interactionMatrices[i] = NTuple{Ninteractions,InteractionMatrix}(interactionMatrices)
     end
     lattice.generators=[Matrix(1.0I,dim,dim)]
+    lattice.spinOperators=[Matrix(1.0I,dim,dim)]
 
     #return lattice
     return lattice
@@ -164,6 +167,17 @@ function addGenerator!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::
 
     end
 end
+
+function addSpinOperator!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::Int64) where {D,N,dim,phdim}
+    if (length(lattice.spinOperators)==d^2-1)
+        lattice.spinOperators[1]=M
+
+    else
+        push!(lattice.spinOperators,M)
+
+    end
+end
+
 
 function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},M::Matrix{Float64},d::Int64,phd::Int64) where {D,N,dim,phdim}
     size(M) == (d^2-1,phd) || error(string("Coupling matrix must be of size ",d^2-1,"x",phd,"."))
