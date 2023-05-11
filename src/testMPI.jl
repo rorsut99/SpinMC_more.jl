@@ -106,39 +106,30 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     return lattice
 end
 
-function runMC()
 
+MPI.Initialized() || MPI.Init()
+commSize = MPI.Comm_size(MPI.COMM_WORLD)
+commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-    MPI.Initialized() || MPI.Init()
-    commSize = MPI.Comm_size(MPI.COMM_WORLD)
-    commRank = MPI.Comm_rank(MPI.COMM_WORLD)
-
-    tmin = 0.1
-    tmax = 10.0
-    beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
+tmin = 0.1
+tmax = 10.0
+beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
 
 
     # define dimensions
-    dim=3           # dimension of wavefunction (N)
-    dim2=dim^2-1    # dimension of spin vector (N^2-1)
+dim=3           # dimension of wavefunction (N)
+dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
-    phdim=4
+phdim=4
 
     # set sweeps
-    thermSweeps=2000
-    sampleSweeps=2000
-    T = 1000.0
-    lattice = makeLattice(dim, dim2, phdim)
-    lattice.Qmax = 1.0
+thermSweeps=2000
+sampleSweeps=2000
+T = 1000.0
+lattice = makeLattice(dim, dim2, phdim)
+lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
-    m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,replicaExchangeRate=10)
-    run!(m,dim, phdim,outfile="simulation.h5")
-    e,e2=means(m.observables.energy)
-
-
-
-    return(lattice)
-end
-
-lattice=runMC()
+m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,replicaExchangeRate=10)
+run!(m,dim, phdim,outfile="simulation.h5")
+e,e2=means(m.observables.energy)

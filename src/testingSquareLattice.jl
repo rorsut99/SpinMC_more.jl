@@ -92,12 +92,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     spring = [1.0, 2.0, 4.0, 5.0]
     mat = [0.0 0 0 0
            0 0.0 0 0
-           0 0 0.0 0
-           0.0 0 0 0
-           0 0.0 0 0
-           0 0 0.0 0
-           0.0 0 0 0
-           0 0.0 0 0]
+           0 0 0.0 0]
 
     addSpringConstant!(lattice, spring, phdim)
     addPhononInteraction!(lattice, mat, dim, phdim)
@@ -105,9 +100,9 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     return lattice
 end
 
-function runMC()
+function runMC(T)
     # define dimensions
-    dim=3           # dimension of wavefunction (N)
+    dim=2           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
     phdim=4
@@ -115,30 +110,40 @@ function runMC()
     # set sweeps
     thermSweeps=2000
     sampleSweeps=2000
-    T = 1000.0
+    beta = 1/T
+    # T = 1000.0
     lattice = makeLattice(dim, dim2, phdim)
     lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
-    m=MonteCarlo(lattice,T,thermSweeps,sampleSweeps)
+    m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps)
     run!(m,dim, phdim)
     e,e2=means(m.observables.energy)
 
-    # print magnetization
-    print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
+    # # print magnetization
+    # print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
 
-    # print energy
-    print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
+    # # print energy
+    # print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
 
-    # plot energy vs sweeps
-    title = string("SU(", dim, ") FM interaction")
-    plot(m.energySeries, title=title)
-    xlabel!("sweeps")
-    ylabel!("energy density")
-
-    return(lattice)
+    # # plot energy vs sweeps
+    # title = string("SU(", dim, ") FM interaction")
+    # plot(m.energySeries, title=title)
+    # xlabel!("sweeps")
+    # ylabel!("energy density")
+    c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice)
+    return mean(m.observables.energy, c)
 end
 
-lattice=runMC()
+Tvals = LinRange(0.1, 4, 20)
+heat = zeros(20)
+for i in 1:length(Tvals)
+    heat[i] = runMC(Tvals[i])
+end
 
+ # plot energy vs sweeps
+title = string("SU(", dim, ") FM heat capacity")
+plot(Tvals, heat, title=title)
+xlabel!("T")
+ylabel!("C")
 
