@@ -80,7 +80,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     addInteraction!(uc,1,1,FMint,dim,(0,1))
     addInteraction!(uc,1,1,FMint,dim,(1,-1))
 
-    Lsize=(12,12)       # size of lattice
+    Lsize=(6,6)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
     generators = makeGenerators(dim)
@@ -130,8 +130,8 @@ function runMC(T)
     phdim=4
 
     # set sweeps
-    thermSweeps=4000
-    sampleSweeps=4000
+    thermSweeps=2000
+    sampleSweeps=2000
     beta = 1/T
     # T = 1000.0
     lattice = makeLattice(dim, dim2, phdim)
@@ -172,8 +172,8 @@ end
 # ylabel!("C")
 
 
-Tpoints=40
-Tvals = LinRange(0.2, 0.7, Tpoints)
+Tpoints=60
+Tvals = LinRange(0.1, 6, Tpoints)
 heat = zeros(Tpoints)
 for i in 1:length(Tvals)
     heat[i] = runMC(Tvals[i])

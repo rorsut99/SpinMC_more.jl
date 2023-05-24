@@ -91,13 +91,19 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, new
     #two-spin interactions
     interactionSites = getInteractionSites(lattice, site)
     interactionMatrices = getInteractionMatrices(lattice, site)
+    E1=0
+    E2=0
     for i in 1:length(interactionSites)
-        s1 = genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim)
-        dE += genRepInteraction(lattice,1,1,ds,s1,site,interactionSites[i],3)
-        dE += genRepInteraction(lattice,2,2,ds,s1,site,interactionSites[i],3)
-        dE += genRepInteraction(lattice,3,3,ds,s1,site,interactionSites[i],3)
-        dE += quadSpinInteraction(lattice,ds,s1,site,interactionSites[i],3)
+        s3 = genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim)
+        E1 += genRepInteraction(lattice,1,1,s1,s3,site,interactionSites[i],3)
+        E1 += genRepInteraction(lattice,2,2,s1,s3,site,interactionSites[i],3)
+        E1 += genRepInteraction(lattice,3,3,s1,s3,site,interactionSites[i],3)
+        E1 += quadSpinInteraction(lattice,s1,s3,site,interactionSites[i],3)
 
+        E2 += genRepInteraction(lattice,1,1,s1,s3,site,interactionSites[i],3)
+        E2 += genRepInteraction(lattice,2,2,s1,s3,site,interactionSites[i],3)
+        E2 += genRepInteraction(lattice,3,3,s1,s3,site,interactionSites[i],3)
+        E2 += quadSpinInteraction(lattice,s1,s3,site,interactionSites[i],3)
     end
 
     # dE += (spinPhononCoupling(lattice, s1, p1) - spinPhononCoupling(lattice, s2, p1))
@@ -108,7 +114,7 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, new
 
     #field interaction
     #dE += dot(ds, getInteractionField(lattice, site))
-
+    dE=E1-E2
     return dE
 end
 
@@ -258,8 +264,11 @@ function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, s0, s1,site1,site2
             res+=spin1*spin2
             end
     end
+    if(res.im>1e-6)
+        print("Error\n")
+    end
 
-    return (res.re)
+    return (-1.5*res.re)
 end
 
 
