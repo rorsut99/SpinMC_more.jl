@@ -100,10 +100,10 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, new
         E1 += genRepInteraction(lattice,3,3,s1,s3,site,interactionSites[i],3)
         E1 += quadSpinInteraction(lattice,s1,s3,site,interactionSites[i],3)
 
-        E2 += genRepInteraction(lattice,1,1,s1,s3,site,interactionSites[i],3)
-        E2 += genRepInteraction(lattice,2,2,s1,s3,site,interactionSites[i],3)
-        E2 += genRepInteraction(lattice,3,3,s1,s3,site,interactionSites[i],3)
-        E2 += quadSpinInteraction(lattice,s1,s3,site,interactionSites[i],3)
+        E2 += genRepInteraction(lattice,1,1,s2,s3,site,interactionSites[i],3)
+        E2 += genRepInteraction(lattice,2,2,s2,s3,site,interactionSites[i],3)
+        E2 += genRepInteraction(lattice,3,3,s2,s3,site,interactionSites[i],3)
+        E2 += quadSpinInteraction(lattice,s2,s3,site,interactionSites[i],3)
     end
 
     # dE += (spinPhononCoupling(lattice, s1, p1) - spinPhononCoupling(lattice, s2, p1))
@@ -215,14 +215,14 @@ end
 function decomposeMat(lattice::Lattice{D,N,dim,phdim},mat::Matrix{ComplexF64},d) where {D,N,dim,phdim}
     mats=copy(lattice.generators)
 
-    push!(mats,(Matrix((1.0+0.0im)I,dim,dim)))
+
 
     sols= vec(mat)
-    eqs= Array{ComplexF64}(undef,d^2,d^2)
+    eqs= Array{ComplexF64}(undef,d^2,d^2-1)
 
 
     for i in 1:d^2
-        for j in 1:d^2
+        for j in 1:d^2-1
             eqs[i,j]=mats[j][i]
         end
     end
@@ -232,30 +232,33 @@ end
 
 # Compute interaction of two sites where inter1, inter2 are integers representing direction 1=z, 2=x,3=y
 function genRepInteraction(lattice::Lattice{D,N,dim,phdim}, inter1, inter2, s0, s1,site1,site2,d) where {D,N,dim,phdim}
-    Id=Matrix(1.0I,d,d)
+    J=1.0
 
     tempS0=copy(s0)
     tempS1=copy(s1)
     
 
-    push!(tempS0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
-    push!(tempS1,calcInnerProd(getSpin(lattice,site2),Id,getSpin(lattice,site2)))
 
     spin1=dot(lattice.genReps[4,inter1],tempS0)
     spin2=dot(lattice.genReps[4,inter2],tempS1)
-    return (spin1*spin2)
+    res=spin1*spin2
+
+    if(res.im>1e-6)
+        print("Error\n")
+    end
+
+    return (J*res.re)
 end
 
 # Compute (S1⋅S2)^2 term
 function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, s0, s1,site1,site2,d) where {D,N,dim,phdim}
-    Id=Matrix(1.0I,d,d)
+    K=1.5
 
     tempS0=copy(s0)
     tempS1=copy(s1)
     
 
-    push!(tempS0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
-    push!(tempS1,calcInnerProd(getSpin(lattice,site2),Id,getSpin(lattice,site2)))
+
     res=0.0
     for i in 1:3
         for j in 1:3
@@ -268,7 +271,7 @@ function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, s0, s1,site1,site2
         print("Error\n")
     end
 
-    return (-1.5*res.re)
+    return (-K*res.re)
 end
 
 
