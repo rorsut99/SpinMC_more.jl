@@ -11,6 +11,7 @@ include("Phonon.jl")
 using LinearAlgebra
 using Suppressor
 using Plots
+using MPI
 
 function makeGenerators(dim::Int)
     # produce generator matrices for different dim
@@ -80,7 +81,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     addInteraction!(uc,1,1,FMint,dim,(0,1))
     addInteraction!(uc,1,1,FMint,dim,(1,-1))
 
-    Lsize=(6,6)       # size of lattice
+    Lsize=(28,28)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
     generators = makeGenerators(dim)
@@ -103,17 +104,17 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     addSpringConstant!(lattice, spring, phdim)
     addPhononInteraction!(lattice, mat, dim, phdim)
 
-    Sx=[0 1.0+0im 0
-    1 0 1
-    0 1 0]/sqrt(2)
+    Sx=[0 0 1.0+0im
+    0 0 1
+    1 1 0]/sqrt(2)
 
-    Sy=(-1im/sqrt(2))*[0 1.0+0im 0
-    -1 0 1
-    0 -1 0]
+    Sy=(-1im/sqrt(2))*[0 0 1.0+0im
+    0 0 -1
+    -1 1 0]
 
     Sz=[1.0+0im 0 0
-    0 0 0
-    0 0 -1]
+    0 -1 0
+    0 0 0]
     addSpinOperator!(lattice,Sx,3)
     addSpinOperator!(lattice,Sy,3)
     addSpinOperator!(lattice,Sz,3)
@@ -129,17 +130,31 @@ function runMC(T)
 
     phdim=4
 
+    MPI.Initialized() || MPI.Init()
+    commSize = MPI.Comm_size(MPI.COMM_WORLD)
+    commRank = MPI.Comm_rank(MPI.COMM_WORLD)
+
     # set sweeps
-    thermSweeps=2000
-    sampleSweeps=2000
-    beta = 1/T
+    thermSweeps=100000
+    sampleSweeps=100000
+
+    temp=ones(length(T))
+    tmin=0.1
+    tmax=0.7
+    T=LinRange(tmin, tmax, commSize)[commRank+1]
+
+    beta=1.0/T
+    #beta=LinRange(1.0/tmax, 1.0/tmin, commSize)[commRank+1]
+    # beta=1/T
+    # beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
+    #beta = temp./T
     # T = 1000.0
     lattice = makeLattice(dim, dim2, phdim)
     lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
-    m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps)
-    run!(m,dim, phdim)
+    m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,replicaExchangeRate=10)
+    run!(m,dim, phdim,outfile="simulation.h5")
     e,e2=means(m.observables.energy)
 
     # # print magnetization
@@ -148,15 +163,11 @@ function runMC(T)
     # # print energy
     # print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
 
-    # # plot energy vs sweeps
-    # title = string("SU(", dim, ") FM interaction")
-    # plot(m.energySeries, title=title)
-    # xlabel!("sweeps")
-    # ylabel!("energy density")
-    c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice)
+    
+    
+    # return (m.energySeries)
+    # c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice) 
     # return mean(m.observables.energy, c)
-
-    return mean(m.observables.energy, c)
 end
 
 # Tvals = LinRange(0.1, 8, 40)
@@ -173,14 +184,24 @@ end
 
 
 Tpoints=60
-Tvals = LinRange(0.1, 6, Tpoints)
+Tvals = LinRange(0.1, 0.7, Tpoints)
 heat = zeros(Tpoints)
-for i in 1:length(Tvals)
-    heat[i] = runMC(Tvals[i])
-end
+
+runMC(Tvals)
+# for i in 1:length(Tvals)
+#     heat[i] = runMC(Tvals[i])
+# end
 
 
-title = string("SU(", dim, ") FM heat capacity")
-plot(Tvals, heat, title=title)
-xlabel!("T")
-ylabel!("C")
+# title = string("SU(", dim, ") FM heat capacity")
+# plot(Tvals, heat, title=title)
+# xlabel!("T")
+# ylabel!("C")
+
+
+# energySeries=runMC(0.01)
+# # plot energy vs sweeps
+# title = string("SU(", dim, ") FM interaction")
+# plot(energySeries, title=title)
+# xlabel!("sweeps")
+# ylabel!("energy density")
