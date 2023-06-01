@@ -82,6 +82,7 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
         for i in 1:length(mc.lattice)
             # dim is not defined locally
             setSpin!(mc.lattice, i, uniformOnSphere(dim))
+            # setSpin!(mc.lattice, i, [0.0+0im,0.0,1.0])
             #setPhonon!(mc.lattice, i, uniformDist(phdim, mc.lattice.Qmax))
         end
     end

@@ -58,8 +58,8 @@ function makeGenerators(dim::Int)
 
         # calculate norm
         norm = sx^2 + sy^2 + sz^2 + s4^2 + s5^2 + s6^2 + s7^2 + s8^2
-
-        generators = [sx, sy, sz, s4, s5, s6, s7, s8]/sqrt(norm[1])
+     
+        generators = [sx, sy, sz, s4, s5, s6, s7, s8]
     end
 
     return generators
@@ -77,11 +77,18 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     Zero = Matrix(0.0I,dim2,dim2)
     addBasisSite!(uc,(0.0,0.0),dim)
     # nearest neighbour interaction
-    addInteraction!(uc,1,1,FMint,dim,(1,0))
-    addInteraction!(uc,1,1,FMint,dim,(0,1))
-    addInteraction!(uc,1,1,FMint,dim,(1,-1))
+    # added parameter to take in the order of the term in the hamiltonian
+    # bilinear interaction
+    addInteraction!(uc,1,1,FMint,1,dim,(1,0))
+    addInteraction!(uc,1,1,FMint,1,dim,(0,1))
+    addInteraction!(uc,1,1,FMint,1,dim,(1,-1))
 
-    Lsize=(28,28)       # size of lattice
+    # biquadratic interaction
+    addInteraction!(uc,1,1,FMint,2,dim,(1,0))
+    addInteraction!(uc,1,1,FMint,2,dim,(0,1))
+    addInteraction!(uc,1,1,FMint,2,dim,(1,-1))
+
+    Lsize=(16,16)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
     generators = makeGenerators(dim)
@@ -135,8 +142,8 @@ function runMC(T)
     commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
     # set sweeps
-    thermSweeps=100000
-    sampleSweeps=100000
+    thermSweeps=10000
+    sampleSweeps=10000
 
     temp=ones(length(T))
     tmin=0.1
@@ -147,7 +154,7 @@ function runMC(T)
     #beta=LinRange(1.0/tmax, 1.0/tmin, commSize)[commRank+1]
     # beta=1/T
     # beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
-    #beta = temp./T
+    # beta = temp./T
     # T = 1000.0
     lattice = makeLattice(dim, dim2, phdim)
     lattice.Qmax = 1.0
@@ -163,8 +170,8 @@ function runMC(T)
     # # print energy
     # print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
 
-    
-    
+    # print(m.lattice.spins)
+    # return (m)
     # return (m.energySeries)
     # c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice) 
     # return mean(m.observables.energy, c)
@@ -183,11 +190,13 @@ end
 # ylabel!("C")
 
 
-Tpoints=60
-Tvals = LinRange(0.1, 0.7, Tpoints)
+Tpoints=30
+Tvals = LinRange(0.1, 4.0, Tpoints)
 heat = zeros(Tpoints)
 
 runMC(Tvals)
+
+
 # for i in 1:length(Tvals)
 #     heat[i] = runMC(Tvals[i])
 # end
@@ -199,9 +208,10 @@ runMC(Tvals)
 # ylabel!("C")
 
 
-# energySeries=runMC(0.01)
+# m=runMC(0.01)
+# print(m.energySeries)
 # # plot energy vs sweeps
 # title = string("SU(", dim, ") FM interaction")
-# plot(energySeries, title=title)
+# plot(m.energySeries, title=title)
 # xlabel!("sweeps")
 # ylabel!("energy density")

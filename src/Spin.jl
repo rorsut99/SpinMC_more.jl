@@ -212,6 +212,45 @@ function decomposeMat(lattice::Lattice{D,N,dim,phdim},mat::Matrix{ComplexF64},d)
             eqs[i,j]=mats[j][i]
         end
     end
+
     return (eqs\sols)
 end
-                
+
+# Compute interaction of two sites where inter1, inter2 are integers representing direction 1=z, 2=x,3=y
+function genRepInteraction(lattice::Lattice{D,N,dim,phdim}, inter1, inter2, site1::Int, site2::Int,d) where {D,N,dim,phdim}
+    Id=Matrix(1.0I,d,d)
+    
+    s0=genExpVals(getSpin(lattice,site1),lattice,d)
+    push!(s0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    s1=genExpVals(getSpin(lattice,site2),lattice,d)
+    push!(s1,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+
+    spin1=dot(lattice.genReps[4,inter1],s0)
+    spin2=dot(lattice.genReps[4,inter2],s1)
+    return (spin1*spin2)
+end
+
+# Compute (S1⋅S2)^2 term
+function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, site1::Int, site2::Int,d) where {D,N,dim,phdim}
+    Id=Matrix(1.0I,d,d)
+    s0=genExpVals(getSpin(lattice,site1),lattice,d)
+    push!(s0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    s1=genExpVals(getSpin(lattice,site2),lattice,d)
+    push!(s1,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    res=0.0
+    for i in 1:9
+        spin1=dot(lattice.genReps[i],s0)
+        spin2=dot(lattice.genReps[i],s1)
+        res+=spin1*spin2
+    end
+
+    return (res)
+end
+
+
+
+
+
+
+
+

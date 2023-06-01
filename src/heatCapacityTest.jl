@@ -67,19 +67,17 @@ end
 function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     # define cubic lattice with Heisenberg interaction
-    a1=(1.0,0.0,0.0)
-    a2=(0.0,1.0,0.0)
-    a3=(0.0,0.0,1.0)
-    uc = UnitCell(a1,a2,a3)
+    a1=(1.0,0.0)
+    a2=(0.0,1.0)
+    uc = UnitCell(a1,a2)
     FMint = Matrix(-1.0I,dim2,dim2)      # Heisenberg interaction
     AFMint = Matrix(1.0I,dim2,dim2)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim2,dim2)
-    addBasisSite!(uc,(0.0,0.0,0.0),dim)
+    addBasisSite!(uc,(0.0,0.0),dim)
     # nearest neighbour interaction
-    addInteraction!(uc,1,1,FMint,dim,(1,0,0))
-    addInteraction!(uc,1,1,FMint,dim,(0,1,0))
-    addInteraction!(uc,1,1,FMint,dim,(0,0,1))
-    Lsize=(6,6,6)       # size of lattice
+    addInteraction!(uc,1,1,FMint,dim,(1,0))
+    addInteraction!(uc,1,1,FMint,dim,(0,1))
+    Lsize=(16,16)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
     generators = makeGenerators(dim)
@@ -92,12 +90,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     spring = [1.0, 2.0, 4.0, 5.0]
     mat = [0.0 0 0 0
            0 0.0 0 0
-           0 0 0.0 0
-           0.0 0 0 0
-           0 0.0 0 0
-           0 0 0.0 0
-           0.0 0 0 0
-           0 0.0 0 0]
+           0 0 0.0 0]
 
     addSpringConstant!(lattice, spring, phdim)
     addPhononInteraction!(lattice, mat, dim, phdim)
@@ -107,7 +100,7 @@ end
 
 function runMC(T)
     # define dimensions
-    dim=3           # dimension of wavefunction (N)
+    dim=2           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
     phdim=4
@@ -137,23 +130,17 @@ function runMC(T)
     # xlabel!("sweeps")
     # ylabel!("energy density")
     c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice)
-    # return mean(m.observables.energy, c)
-
-    return (m.lattice)
+    return mean(m.observables.energy, c)
 end
 
-# Tvals = LinRange(0.1, 8, 40)
-# heat = zeros(40)
-# for i in 1:length(Tvals)
-#     heat[i] = runMC(Tvals[i])
-# end
+Tvals = LinRange(0.1, 4, 40)
+heat = zeros(40)
+for i in 1:length(Tvals)
+    heat[i] = runMC(Tvals[i])
+end
 
-#  # plot energy vs sweeps
-# title = string("SU(", dim, ") FM heat capacity")
-# plot(Tvals, heat, title=title)
-# xlabel!("T")
-# ylabel!("C")
-
-
-
-lattice=runMC(0.1 )
+ # plot energy vs sweeps
+title = string("SU(", dim, ") FM heat capacity")
+plot(Tvals, heat, title=title)
+xlabel!("T")
+ylabel!("C")

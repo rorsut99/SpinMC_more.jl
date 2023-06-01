@@ -22,7 +22,11 @@ end
 
 # Created function to calculate inner product
 function calcInnerProd(s1,gen,s2)
-    return real(dot(s1,gen*s2))
+    ret=dot(s1,gen*s2)
+    if ret.im>1e-6
+        print("Error")
+    end
+    return real(ret)
 end
 
 #Created function to return vector of expctation values of all generators for a site
@@ -215,14 +219,17 @@ end
 function decomposeMat(lattice::Lattice{D,N,dim,phdim},mat::Matrix{ComplexF64},d) where {D,N,dim,phdim}
     mats=copy(lattice.generators)
 
+    Id=Matrix((1.0+0im)I,d,d)
+    push!(mats,Id)
+
 
 
     sols= vec(mat)
-    eqs= Array{ComplexF64}(undef,d^2,d^2-1)
+    eqs= Array{ComplexF64}(undef,d^2,d^2)
 
 
     for i in 1:d^2
-        for j in 1:d^2-1
+        for j in 1:d^2
             eqs[i,j]=mats[j][i]
         end
     end
@@ -233,10 +240,11 @@ end
 # Compute interaction of two sites where inter1, inter2 are integers representing direction 1=z, 2=x,3=y
 function genRepInteraction(lattice::Lattice{D,N,dim,phdim}, inter1, inter2, s0, s1,site1,site2,d) where {D,N,dim,phdim}
     J=1.0
-
+    Id=Matrix(1.0I,d,d)
     tempS0=copy(s0)
     tempS1=copy(s1)
-    
+    push!(tempS0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    push!(tempS1,calcInnerProd(getSpin(lattice,site2),Id,getSpin(lattice,site2)))
 
 
     spin1=dot(lattice.genReps[4,inter1],tempS0)
@@ -253,9 +261,11 @@ end
 # Compute (S1⋅S2)^2 term
 function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, s0, s1,site1,site2,d) where {D,N,dim,phdim}
     K=1.5
-
+    Id=Matrix(1.0I,d,d)
     tempS0=copy(s0)
     tempS1=copy(s1)
+    push!(tempS0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    push!(tempS1,calcInnerProd(getSpin(lattice,site2),Id,getSpin(lattice,site2)))
     
 
 
@@ -267,9 +277,15 @@ function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, s0, s1,site1,site2
             res+=spin1*spin2
             end
     end
-    if(res.im>1e-6)
-        print("Error\n")
-    end
+
+  
+
+
+
+
+    # if(res.im>1e-6)
+    #     print("Error\n")
+    # end
 
     return (-K*res.re)
 end
