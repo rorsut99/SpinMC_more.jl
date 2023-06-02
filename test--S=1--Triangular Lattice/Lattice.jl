@@ -17,10 +17,7 @@ mutable struct Lattice{D,N,dim,phdim}
     interactionMatrices::Vector{NTuple{N,InteractionMatrix}} #list of length N_sites, for every site contains all interaction matrices
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
     interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
-    generators::Vector{Matrix{ComplexF64}} #list of length dim^2-1 holding generators for the SU(N) representation of interest
 
-    spinOperators::Vector{Matrix{ComplexF64}}
-    genReps::Matrix{Vector{ComplexF64}}
 
     expVals::Vector{Vector{Float64}}
     Lattice(D,N,dim,phdim) = new{D,N,dim,phdim}()
@@ -104,7 +101,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
     lattice.phonons = Array{Float64,2}(undef, phdim, length(sites))
 
     lattice.springConstants = zeros(phdim)
-    lattice.genReps =  Matrix{Vector{ComplexF64}}(undef,4,3)
+
 
     lattice.phononCoupling =  Array{Float64,2}(undef, phdim, dim^2-1)
 
@@ -150,34 +147,13 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
         lattice.interactionSites[i] = NTuple{Ninteractions,Int}(interactionSites)
         lattice.interactionMatrices[i] = NTuple{Ninteractions,InteractionMatrix}(interactionMatrices)
     end
-    lattice.generators=[Matrix(1.0I,dim,dim)]
-    lattice.spinOperators=[Matrix(1.0I,dim,dim)]
+
 
     #return lattice
     return lattice
 end
 
-function addGenerator!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::Int64) where {D,N,dim,phdim}
-    size(M) == (d,d) || error(string("Generator must be of size ",d,"x",d,"."))
 
-    if (length(lattice.generators)==d^2-1)
-        lattice.generators[1]=M
-
-    else
-        push!(lattice.generators,M)
-
-    end
-end
-
-function addSpinOperator!(lattice::Lattice{D,N,dim,phdim},M::Matrix{ComplexF64},d::Int64) where {D,N,dim,phdim}
-    if (length(lattice.spinOperators)==3)
-        lattice.spinOperators[1]=M
-
-    else
-        push!(lattice.spinOperators,M)
-
-    end
-end
 
 
 function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},M::Matrix{Float64},d::Int64,phd::Int64) where {D,N,dim,phdim}
@@ -229,19 +205,4 @@ function getInteractionField(lattice::Lattice{D,N,dim,phdim}, site::Int)::NTuple
     return lattice.interactionField[site]
 end
 
-function setGenReps!(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
-    for i in 1:3
-        for j in 1:3
-            mat=lattice.spinOperators[i]*lattice.spinOperators[j]
-            vec=decomposeMat(lattice,mat,d)
-            lattice.genReps[i,j]=vec
-        end
-    end
-
-    for k in 1:3
-        mat=lattice.spinOperators[k]
-        vec=decomposeMat(lattice,mat,d)
-        lattice.genReps[4,k]=vec
-    end
-end
 

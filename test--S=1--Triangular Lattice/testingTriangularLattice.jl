@@ -1,4 +1,5 @@
 include("UnitCell.jl")
+include("Generators.jl")
 include("InteractionMatrix.jl")
 include("Lattice.jl")
 include("Spin.jl")
@@ -88,6 +89,8 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     addInteraction!(uc,1,1,FMint,2,dim,(0,1))
     addInteraction!(uc,1,1,FMint,2,dim,(1,-1))
 
+    gens=initGen(dim)
+
     Lsize=(16,16)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
@@ -95,7 +98,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     # push generators to lattice struct
     for gen in generators
-        addGenerator!(lattice,gen,dim)
+        addGenerator!(gens,gen,dim)
     end
 
     spring = [1.0, 2.0, 4.0, 5.0]
@@ -122,12 +125,12 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     Sz=[1.0+0im 0 0
     0 -1 0
     0 0 0]
-    addSpinOperator!(lattice,Sx,3)
-    addSpinOperator!(lattice,Sy,3)
-    addSpinOperator!(lattice,Sz,3)
-    setGenReps!(lattice,3)
+    addSpinOperator!(gens,Sy,3)
+    addSpinOperator!(gens,Sz,3)
+    addSpinOperator!(gens,Sx,3)
+    setGenReps!(gens,3)
 
-    return lattice
+    return (lattice,gens)
 end
 
 function runMC(T)
@@ -137,18 +140,18 @@ function runMC(T)
 
     phdim=4
 
-    MPI.Initialized() || MPI.Init()
-    commSize = MPI.Comm_size(MPI.COMM_WORLD)
-    commRank = MPI.Comm_rank(MPI.COMM_WORLD)
+    # MPI.Initialized() || MPI.Init()
+    # commSize = MPI.Comm_size(MPI.COMM_WORLD)
+    # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
     # set sweeps
-    thermSweeps=10000
-    sampleSweeps=10000
+    thermSweeps=1000
+    sampleSweeps=1000
 
-    temp=ones(length(T))
-    tmin=0.1
-    tmax=0.7
-    T=LinRange(tmin, tmax, commSize)[commRank+1]
+    # temp=ones(length(T))
+    # tmin=0.1
+    # tmax=0.7
+    # T=LinRange(tmin, tmax, commSize)[commRank+1]
 
     beta=1.0/T
     #beta=LinRange(1.0/tmax, 1.0/tmin, commSize)[commRank+1]
@@ -156,12 +159,12 @@ function runMC(T)
     # beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
     # beta = temp./T
     # T = 1000.0
-    lattice = makeLattice(dim, dim2, phdim)
+    lattice,gens = makeLattice(dim, dim2, phdim)
     lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
     m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,replicaExchangeRate=10)
-    run!(m,dim, phdim,outfile="simulation.h5")
+    run!(m,gens,dim, phdim)
     e,e2=means(m.observables.energy)
 
     # # print magnetization
@@ -171,7 +174,7 @@ function runMC(T)
     # print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
 
     # print(m.lattice.spins)
-    # return (m)
+    return (m)
     # return (m.energySeries)
     # c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice) 
     # return mean(m.observables.energy, c)
@@ -190,11 +193,11 @@ end
 # ylabel!("C")
 
 
-Tpoints=30
-Tvals = LinRange(0.1, 4.0, Tpoints)
-heat = zeros(Tpoints)
+# Tpoints=30
+# Tvals = LinRange(0.1, 4.0, Tpoints)
+# heat = zeros(Tpoints)
 
-runMC(Tvals)
+# runMC(Tvals)
 
 
 # for i in 1:length(Tvals)
@@ -208,10 +211,10 @@ runMC(Tvals)
 # ylabel!("C")
 
 
-# m=runMC(0.01)
-# print(m.energySeries)
-# # plot energy vs sweeps
-# title = string("SU(", dim, ") FM interaction")
-# plot(m.energySeries, title=title)
-# xlabel!("sweeps")
-# ylabel!("energy density")
+m=runMC(0.01)
+print(m.energySeries)
+# plot energy vs sweeps
+title = string("SU(", dim, ") FM interaction")
+plot(m.energySeries, title=title)
+xlabel!("sweeps")
+ylabel!("energy density")

@@ -52,7 +52,7 @@ function MonteCarlo(
     return mc
 end
 
-function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
+function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
     #init MPI
     rank = 0
     commSize = 1
@@ -90,7 +90,7 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
     #init Monte Carlo run
     totalSweeps = mc.thermalizationSweeps + mc.measurementSweeps
     partnerSpinConfiguration = deepcopy(mc.lattice.spins)
-    energy = getEnergy(mc.lattice)
+    energy = getEnergy(mc.lattice,gens)
 
     #launch Monte Carlo run
     lastCheckpointTime = time()
@@ -104,8 +104,8 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
             site = rand(mc.rng, 1:length(mc.lattice))
 
             #propose new spin configuration
-            newSpinState = proposeUpdate(site,mc.lattice,dim)
-            energyDifference = getSpinEnergyDifference(mc.lattice, site, newSpinState)
+            newSpinState = proposeUpdate(site,mc.lattice,gens,dim)
+            energyDifference = getSpinEnergyDifference(mc.lattice,gens, site, newSpinState)
 
             #check acceptance of new configuration
             statistics.attemptedLocalUpdates += 1

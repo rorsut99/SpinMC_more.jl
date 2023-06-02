@@ -15,10 +15,15 @@ end
 Adds an interaction between spin1 located at basis site `b1` of the given `unitcell` and spin2 at basis site `b2` in a unit cell that is offset by `offset` lattice vectors. 
 The exchange energy is calculated as spin1'.M.spin2. 
 """
+
+
+
 #Changed hard coded '3' to dim--dimension of spin vector
-function addInteraction!(unitcell::UnitCell{D}, b1::Int, b2::Int, M::Matrix{Float64},dim::Int, offset::NTuple{D,Int}=Tuple(zeros(Int,D))) where D
+function addInteraction!(unitcell::UnitCell{D}, b1::Int, b2::Int, M::Matrix{Float64},order::Int, dim::Int, offset::NTuple{D,Int}=Tuple(zeros(Int,D))) where D
     size(M) == (dim^2-1,dim^2-1) || error(string("Interaction matrix must be of size ",dim^2-1,"x",dim^2-1,"."))
     b1 == b2 && offset == Tuple(zeros(Int,D)) && error("Interaction cannot be local. Use setInteractionOnsite!() instead.")
+
+    # get interaction matrix in generator basis from matrix in spin basis
 
     push!(unitcell.interactions, (b1,b2,offset,M))
 end
