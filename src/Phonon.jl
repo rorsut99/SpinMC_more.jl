@@ -23,3 +23,15 @@ end
 function setPhonon!(lattice::Lattice{D,N,dim,phdim}, site::Int, newState::Vector{Float64}) where {D,N,dim,phdim}
     lattice.phonons[:,site] = newState
 end
+
+function couplingMatrix(gens, M, dim, phdim)
+    res=zeros(ComplexF64,dim^2,phdim)
+    for i in 1:3
+        for j in 1:phdim
+
+            res[:,j]+=M[i,j]*gens.genReps[4,i]
+
+        end
+    end
+    return res
+end

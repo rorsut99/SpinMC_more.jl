@@ -102,6 +102,22 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     addSpringConstant!(lattice, spring, phdim)
     addPhononInteraction!(lattice, mat, dim, phdim)
 
+    Sx=[0 1.0+0im 0
+    1 0 1
+    0 1 0]/sqrt(2)
+
+    Sy=(-1im/sqrt(2))*[0 1.0+0im 0
+    -1 0 1
+    0 -1 0]
+
+    Sz=[1.0+0im 0 0
+    0 0 0
+    0 0 -1]
+    addSpinOperator!(lattice,Sx,3)
+    addSpinOperator!(lattice,Sy,3)
+    addSpinOperator!(lattice,Sz,3)
+    setGenReps!(lattice,3)
+
     return lattice
 end
 

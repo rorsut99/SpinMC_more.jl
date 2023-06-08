@@ -8,10 +8,10 @@ function uniformOnSphere(dim)
 end
 
 # Created function to propose update of spin state
-function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},d, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
+function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators,d, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
     s1=getSpin(lattice, site)
     genIn=rand(1:d^2-1)
-    gen=lattice.generators[genIn]
+    gen=gens.generators[genIn]
 
 
     phi = 2.0 * pi * rand(rng)
@@ -22,14 +22,18 @@ end
 
 # Created function to calculate inner product
 function calcInnerProd(s1,gen,s2)
-    return real(dot(s1,gen*s2))
+    ret=dot(s1,gen*s2)
+    # if ret.im>1e-6
+    #     print("Error")
+    # end
+    return real(ret)
 end
 
 #Created function to return vector of expctation values of all generators for a site
-function genExpVals(s1,lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
+function genExpVals(s1,gens::Generators,d) 
     vals=zeros(d^2-1)
     i=1
-    for mat in lattice.generators
+    for mat in gens.generators
         vals[i]=calcInnerProd(s1,mat,s1)
         i+=1
     end
@@ -42,27 +46,34 @@ function exchangeEnergy(s1, M::InteractionMatrix, s2)::Float64
 end
 
 # calculates energy in terms of exp values vectors
-function getEnergy(lattice::Lattice{D,N,dim,phdim})::Float64 where {D,N,dim,phdim}
+function getEnergy(lattice::Lattice{D,N,dim,phdim},gens::Generators)::Float64 where {D,N,dim,phdim}
     energy = 0.0
-
+    d=size(gens.spinOperators[1])[1]
+    Id=Matrix((1.0+0im)I,d,d)
     for site in 1:length(lattice)
         # get vector of exp values for site
-        s0 = genExpVals(getSpin(lattice, site), lattice,dim)
-        # p0 = getPhonon(lattice, site)
+        s0 = genExpVals(getSpin(lattice, site), gens,dim)
+        p0 = getPhonon(lattice, site)
+        tempS0=copy(s0)
+        
+        push!(tempS0,calcInnerProd(getSpin(lattice,site),Id,getSpin(lattice,site)))
+    
 
         #two-spin interactions
         interactionSites = getInteractionSites(lattice, site)
         interactionMatrices = getInteractionMatrices(lattice, site)
         for i in 1:length(interactionSites)
             # get vector of exp values for interaction site
-            s1 = genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim)
+            s1 = genExpVals(getSpin(lattice, interactionSites[i]), gens,dim)
+            tempS1=copy(s1)
+            push!(tempS1,calcInnerProd(getSpin(lattice,interactionSites[i]),Id,getSpin(lattice,interactionSites[i])))
             if site > interactionSites[i]
-                energy += exchangeEnergy(s0, interactionMatrices[i], s1)
+                energy += exchangeEnergy(tempS0, interactionMatrices[i], tempS1)
             end
         end
 
-        # energy += phononPotentialEnergy(lattice, p0)
-        # energy += spinPhononCoupling(lattice, s0, p0)
+        energy += phononPotentialEnergy(lattice, p0)
+        energy += spinPhononCoupling(lattice, tempS0, p0)
 
         #onsite interaction
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
@@ -75,24 +86,42 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim})::Float64 where {D,N,dim,phdi
 end
 
 #Updated to expect a vector of complex numbers for newState
-function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N,dim,phdim}
+function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim},gens::Generators, site::Int, newState::Vector{ComplexF64})::Float64 where {D,N,dim,phdim}
     dE = 0.0
     oldState = getSpin(lattice, site)
+    d=size(gens.spinOperators[1])[1]
+    Id=Matrix((1.0+0im)I,d,d)
 
-    s1=genExpVals(newState,lattice,dim)
-    s2=genExpVals(oldState,lattice,dim)
+
+    s1=genExpVals(newState,gens,dim)
+    s2=genExpVals(oldState,gens,dim)
+    tempS1=copy(s1)
+    tempS2=copy(s2)
+    push!(tempS1,calcInnerProd(newState,Id,newState))
+    push!(tempS2,calcInnerProd(oldState,Id,oldState))
+    
     ds = s1 .- s2
 
-    # p1 = getPhonon(lattice, site)
+    p1 = getPhonon(lattice, site)
 
     #two-spin interactions
     interactionSites = getInteractionSites(lattice, site)
     interactionMatrices = getInteractionMatrices(lattice, site)
+    E1=0
+    E2=0
     for i in 1:length(interactionSites)
-        dE += exchangeEnergy(ds, interactionMatrices[i],  genExpVals(getSpin(lattice, interactionSites[i]), lattice,dim))
+        s3 = genExpVals(getSpin(lattice, interactionSites[i]),gens,dim)
+        tempS3=copy(s3)
+        push!(tempS3,calcInnerProd(getSpin(lattice, interactionSites[i]),Id,getSpin(lattice, interactionSites[i])))
+
+
+
+        E1 += exchangeEnergy(tempS1, interactionMatrices[i], tempS3)
+
+        E2 += exchangeEnergy(tempS2, interactionMatrices[i], tempS3)
     end
 
-    # dE += (spinPhononCoupling(lattice, s1, p1) - spinPhononCoupling(lattice, s2, p1))
+    dE += (spinPhononCoupling(lattice, tempS1, p1) - spinPhononCoupling(lattice, tempS2, p1))
 
     #onsite interaction
     #interactionOnsite = getInteractionOnsite(lattice, site)
@@ -100,20 +129,23 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, new
 
     #field interaction
     #dE += dot(ds, getInteractionField(lattice, site))
-
+    dE=E1-E2
     return dE
 end
 
-function getPhononEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, newPhState::Vector{Float64})::Float64 where {D,N,dim,phdim}
+function getPhononEnergyDifference(lattice::Lattice{D,N,dim,phdim}, gens::Generators, site::Int, newPhState::Vector{Float64})::Float64 where {D,N,dim,phdim}
     dE = 0.0
     oldState = getSpin(lattice, site)
 
-    s2=genExpVals(oldState,lattice,dim)
+    Id=Matrix((1.0+0im)I,dim,dim)
+    s2=genExpVals(oldState,gens,dim)
+    tempS2=copy(s2)
+    push!(tempS2,calcInnerProd(oldState,Id,oldState))
 
-    # p1 = getPhonon(lattice, site)
+    p1 = getPhonon(lattice, site)
 
-    # dE += (phononPotentialEnergy(lattice, newPhState) - phononPotentialEnergy(lattice, p1))
-    # dE += (spinPhononCoupling(lattice, s2, newPhState) - spinPhononCoupling(lattice, s2, p1))
+    dE += (phononPotentialEnergy(lattice, newPhState) - phononPotentialEnergy(lattice, p1))
+    dE += (spinPhononCoupling(lattice, tempS2, newPhState) - spinPhononCoupling(lattice, tempS2, p1))
 
     #onsite interaction
     #interactionOnsite = getInteractionOnsite(lattice, site)
@@ -125,33 +157,41 @@ function getPhononEnergyDifference(lattice::Lattice{D,N,dim,phdim}, site::Int, n
     return dE
 end
 
-function getMagnetization(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
+function getMagnetization(lattice::Lattice{D,N,dim,phdim},gens::Generators,d) where {D,N,dim,phdim}
     mag = zeros(d^2-1)
     for i in 1:length(lattice)
-        spin = genExpVals(getSpin(lattice, i),lattice,d)
+        spin = genExpVals(getSpin(lattice, i),gens,d)
         mag+=spin
     end
     return mag / length(lattice)
 end
 
-function getAFMMagnetization(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
+function getAFMMagnetization(lattice::Lattice{D,N,dim,phdim},gens::Generators,d) where {D,N,dim,phdim}
     mag = zeros(d^2-1)
     for i in 1:length(lattice)
         if i % 2 == 0
-            spin = genExpVals(getSpin(lattice, i),lattice,d)
+            spin = genExpVals(getSpin(lattice, i),gens,d)
         else
-            spin = -1*genExpVals(getSpin(lattice, i),lattice,d)
+            spin = -1*genExpVals(getSpin(lattice, i),gens,d)
         end
         mag+=spin
     end
     return mag / length(lattice)
 end
 
-function getCorrelation(lattice::Lattice{D,N,dim,phdim}, spin::Int = 1) where {D,N,dim,phdim}
-    corr = zeros(length(lattice))
-    s0 = getSpin(lattice, spin)
+function getCorrelation(lattice::Lattice{D,N,dim,phdim},gens::Generators,d, spin::Int = 1) where {D,N,dim,phdim}
+    corr = zeros(d^2, d^2, length(lattice))
+    Id=Matrix((1.0+0im)I,d,d)
+    s = getSpin(lattice, spin)
+    s0 = genExpVals(s, gens, d)
+    tempS0=copy(s0)
+    push!(tempS0,calcInnerProd(s,Id,s))
     for i in 1:length(lattice)
-        corr[i] = dot(s0, getSpin(lattice, i))
+        state1 = getSpin(lattice, i)
+        s1 = genExpVals(state1,gens,d)
+        tempS1=copy(s1)
+        push!(tempS1,calcInnerProd(state1,Id,state1))
+        corr[:, :, i] = tempS0*transpose(tempS1)
     end
     return corr
 end
@@ -166,9 +206,9 @@ end
 #     return ans
 # end
 
-function getSusceptibility(lattice::Lattice{D,N,dim,phdim}) where {D,N,dim,phdim}
+function getSusceptibility(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
     chitens = zeros(Float64,3,3)
-    mag = length(lattice) .* getMagnetization(lattice)
+    mag = length(lattice) .* getMagnetization(lattice,gens,d)
     for k in 1:3
         for l in 1:3
             chitens[k,l] = mag[k]*mag[l]
@@ -186,11 +226,11 @@ function getSusceptibility(lattice::Lattice{D,N,dim,phdim}) where {D,N,dim,phdim
 end
 
 
-function finalState!(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
+function finalState!(lattice::Lattice{D,N,dim,phdim},gens::Generators,d) where {D,N,dim,phdim}
     expVals=Vector{Vector{Float64}}(undef,length(lattice))
     for site in 1:length(lattice)
         s1=getSpin(lattice,site)
-        vec=genExpVals(s1,lattice,d)
+        vec=genExpVals(s1,gens,d)
         expVals[site]=vec
     end
     lattice.expVals=expVals
@@ -198,53 +238,60 @@ function finalState!(lattice::Lattice{D,N,dim,phdim},d) where {D,N,dim,phdim}
 end
 
 
-function decomposeMat(lattice::Lattice{D,N,dim,phdim},mat::Matrix{ComplexF64},d) where {D,N,dim,phdim}
-    mats=copy(lattice.generators)
-
-    push!(mats,(Matrix((1.0+0.0im)I,dim,dim)))
-
-    sols= vec(mat)
-    eqs= Array{ComplexF64}(undef,d^2,d^2)
-
-
-    for i in 1:d^2
-        for j in 1:d^2
-            eqs[i,j]=mats[j][i]
-        end
-    end
-
-    return (eqs\sols)
-end
 
 # Compute interaction of two sites where inter1, inter2 are integers representing direction 1=z, 2=x,3=y
-function genRepInteraction(lattice::Lattice{D,N,dim,phdim}, inter1, inter2, site1::Int, site2::Int,d) where {D,N,dim,phdim}
+function genRepInteraction(lattice::Lattice{D,N,dim,phdim},gens::Generators, inter1, inter2, s0, s1,site1,site2,d) where {D,N,dim,phdim}
+    J=-1.0
     Id=Matrix(1.0I,d,d)
-    
-    s0=genExpVals(getSpin(lattice,site1),lattice,d)
-    push!(s0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
-    s1=genExpVals(getSpin(lattice,site2),lattice,d)
-    push!(s1,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    tempS0=copy(s0)
+    tempS1=copy(s1)
+    push!(tempS0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    push!(tempS1,calcInnerProd(getSpin(lattice,site2),Id,getSpin(lattice,site2)))
 
-    spin1=dot(lattice.genReps[4,inter1],s0)
-    spin2=dot(lattice.genReps[4,inter2],s1)
-    return (spin1*spin2)
-end
 
-# Compute (S1⋅S2)^2 term
-function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim}, site1::Int, site2::Int,d) where {D,N,dim,phdim}
-    Id=Matrix(1.0I,d,d)
-    s0=genExpVals(getSpin(lattice,site1),lattice,d)
-    push!(s0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
-    s1=genExpVals(getSpin(lattice,site2),lattice,d)
-    push!(s1,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
-    res=0.0
-    for i in 1:9
-        spin1=dot(lattice.genReps[i],s0)
-        spin2=dot(lattice.genReps[i],s1)
-        res+=spin1*spin2
+    spin1=dot(gens.genReps[4,inter1],tempS0)
+    spin2=dot(gens.genReps[4,inter2],tempS1)
+    res=spin1*spin2
+
+    if(res.im>1e-6)
+        print("Error\n")
     end
 
-    return (res)
+    return (J*res.re)
+end
+
+
+
+# Compute (S1⋅S2)^2 term
+function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim},gens::Generators, s0, s1,site1,site2,d) where {D,N,dim,phdim}
+    K=0.0
+    Id=Matrix(1.0I,d,d)
+    tempS0=copy(s0)
+    tempS1=copy(s1)
+    push!(tempS0,calcInnerProd(getSpin(lattice,site1),Id,getSpin(lattice,site1)))
+    push!(tempS1,calcInnerProd(getSpin(lattice,site2),Id,getSpin(lattice,site2)))
+    
+
+
+    res=0.0
+    for i in 1:3
+        for j in 1:3
+            spin1=dot(gens.genReps[i,j],tempS0)
+            spin2=dot(gens.genReps[i,j],tempS1)
+            res+=spin1*spin2
+            end
+    end
+
+  
+
+
+
+
+    # if(res.im>1e-6)
+    #     print("Error\n")
+    # end
+
+    return (-K*res.re)
 end
 
 

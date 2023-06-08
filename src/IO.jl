@@ -41,7 +41,7 @@ function writeMonteCarlo(filename::String, mc::MonteCarlo{Lattice{D,N,dim,phdim}
             f["mc/lattice/sitePositions/"*string(i)] = array(mc.lattice.sitePositions[i])
         end
 
-        f["mc/observables/expVals"] = array(mc.lattice.expVals)
+        # f["mc/observables/expVals"] = array(mc.lattice.expVals)
 
         f["mc/observables/energyDensity/mean"] = means(mc.observables.energy)[1]
         f["mc/observables/energyDensity/error"] = std_errors(mc.observables.energy)[1]

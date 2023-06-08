@@ -37,7 +37,7 @@ function MonteCarlo(
     lattice::T, 
     beta::Float64, 
     thermalizationSweeps::Int, 
-    measurementSweeps::Int; 
+    measurementSweeps::Int,dim::Int; 
     measurementRate::Int = 1, 
     replicaExchangeRate::Int = 10, 
     reportInterval::Int = round(Int, 0.05 * (thermalizationSweeps + measurementSweeps)), 
@@ -46,13 +46,13 @@ function MonteCarlo(
     seed::UInt = rand(Random.RandomDevice(),UInt)
     ) where T<:Lattice where U<:AbstractRNG
 
-    mc = MonteCarlo(deepcopy(lattice), beta, thermalizationSweeps, measurementSweeps, measurementRate, replicaExchangeRate, reportInterval, checkpointInterval, rng, seed, 0,zeros(thermalizationSweeps+measurementSweeps), Observables(lattice))
+    mc = MonteCarlo(deepcopy(lattice), beta, thermalizationSweeps, measurementSweeps, measurementRate, replicaExchangeRate, reportInterval, checkpointInterval, rng, seed, 0,zeros(thermalizationSweeps+measurementSweeps), Observables(lattice,dim))
     Random.seed!(mc.rng, mc.seed)
     
     return mc
 end
 
-function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
+function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
     #init MPI
     rank = 0
     commSize = 1
@@ -82,14 +82,15 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
         for i in 1:length(mc.lattice)
             # dim is not defined locally
             setSpin!(mc.lattice, i, uniformOnSphere(dim))
-            #setPhonon!(mc.lattice, i, uniformDist(phdim, mc.lattice.Qmax))
+            # setSpin!(mc.lattice, i, [0.0+0im,0.0,1.0])
+            setPhonon!(mc.lattice, i, uniformDist(phdim, mc.lattice.Qmax))
         end
     end
 
     #init Monte Carlo run
     totalSweeps = mc.thermalizationSweeps + mc.measurementSweeps
     partnerSpinConfiguration = deepcopy(mc.lattice.spins)
-    energy = getEnergy(mc.lattice)
+    energy = getEnergy(mc.lattice,gens)
 
     #launch Monte Carlo run
     lastCheckpointTime = time()
@@ -103,8 +104,8 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
             site = rand(mc.rng, 1:length(mc.lattice))
 
             #propose new spin configuration
-            newSpinState = proposeUpdate(site,mc.lattice,dim)
-            energyDifference = getSpinEnergyDifference(mc.lattice, site, newSpinState)
+            newSpinState = proposeUpdate(site,mc.lattice,gens,dim)
+            energyDifference = getSpinEnergyDifference(mc.lattice,gens, site, newSpinState)
 
             #check acceptance of new configuration
             statistics.attemptedLocalUpdates += 1
@@ -116,23 +117,23 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
             end
         end
 
-        # for i in 1:length(mc.lattice)
-        #     #select random spin
-        #     site = rand(mc.rng, 1:length(mc.lattice))
+        for i in 1:length(mc.lattice)
+            #select random spin
+            site = rand(mc.rng, 1:length(mc.lattice))
 
-        #     #propose new spin configuration
-        #     #newPhState = uniformDist(phdim, mc.lattice.Qmax)
-        #     #energyDifference = getPhononEnergyDifference(mc.lattice, site, newPhState)
+            #propose new spin configuration
+            newPhState = uniformDist(phdim, mc.lattice.Qmax)
+            energyDifference = getPhononEnergyDifference(mc.lattice, gens, site, newPhState)
 
-        #     #check acceptance of new configuration
-        #     #statistics.attemptedLocalUpdates += 1
-        #     # p = exp(-mc.beta * energyDifference)
-        #     # if (rand(mc.rng) < min(1.0, p))
-        #     #     setPhonon!(mc.lattice,site,newPhState)
-        #     #     energy += energyDifference
-        #     #     statistics.acceptedLocalUpdates += 1
-        #     # end
-        # end
+            #check acceptance of new configuration
+            statistics.attemptedLocalUpdates += 1
+            p = exp(-mc.beta * energyDifference)
+            if (rand(mc.rng) < min(1.0, p))
+                setPhonon!(mc.lattice,site,newPhState)
+                energy += energyDifference
+                statistics.acceptedLocalUpdates += 1
+            end
+        end
         statistics.sweeps += 1
 
         #perform replica exchange
@@ -170,7 +171,7 @@ function run!(mc::MonteCarlo{T}, dim::Int, phdim::Int; outfile::Union{String,Not
         #perform measurement
         if mc.sweep >= mc.thermalizationSweeps
             if mc.sweep % mc.measurementRate == 0
-                performMeasurements!(mc.observables, mc.lattice, energy)
+                performMeasurements!(mc.observables, mc.lattice, energy, gens, dim)
             end
         end
 

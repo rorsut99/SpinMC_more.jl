@@ -20,19 +20,19 @@ mutable struct Observables
     tzlist::LogBinner{Vector{Float64},32,BinningAnalysis.Variance{Vector{Float64}}}
     
     magnetizationVector::LogBinner{Vector{Float64},32,BinningAnalysis.Variance{Vector{Float64}}}
-    correlation::LogBinner{Vector{Float64},32,BinningAnalysis.Variance{Vector{Float64}}}
+    correlation::LogBinner{Array{Float64,3},32,BinningAnalysis.Variance{Array{Float64,3}}}
 end
 
-function Observables(lattice::T) where T<:Lattice
+function Observables(lattice::T, dim::Int) where T<:Lattice
     return Observables(ErrorPropagator(Float64), LogBinner(Float64),
         LogBinner(Float64), LogBinner(Float64), LogBinner(Float64), #M components
         # LogBinner(Float64), LogBinner(Float64), LogBinner(Float64),LogBinner(Float64), #Chi tensor
         LogBinner(zeros(Float64,3,3)) , # chi tensor
         LogBinner(zeros(Float64,lattice.length)) , LogBinner(zeros(Float64,lattice.length)) , LogBinner(zeros(Float64,lattice.length)) , #lists
-        LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,lattice.length)))
+        LogBinner(zeros(Float64,3)), LogBinner(zeros(Float64,dim^2,dim^2,lattice.length)))
 end
 
-function performMeasurements!(observables::Observables, lattice::T, energy::Float64) where T<:Lattice
+function performMeasurements!(observables::Observables, lattice::T, energy::Float64,gens::Generators,d::Int) where T<:Lattice
     #measure energy and energy^2
     push!(observables.energy, energy / length(lattice), energy * energy / (length(lattice) * length(lattice)))
 
@@ -56,5 +56,5 @@ function performMeasurements!(observables::Observables, lattice::T, energy::Floa
     #push!(observables.tzlist, lattice.spins[3,:])
 
     #measure spin correlations
-    #push!(observables.correlation, getCorrelation(lattice))
+    push!(observables.correlation, getCorrelation(lattice, gens, d))
 end
