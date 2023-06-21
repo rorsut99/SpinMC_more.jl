@@ -131,11 +131,14 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     
 
-    spring = [1.0]
-    mat = [1.0; 0.0; 0.0 ;;]
+    spring = [1.0,1.0]
+    # mat = [1.0; 0.0; 0.0 ;;]
+    mat =[1.0 0.0
+        0.0  0.0
+        0.0  1.0]
 
     addSpringConstant!(lattice, spring, phdim)
-    addPhononInteraction!(lattice, gens, mat, dim, phdim)
+    addPhononInteraction!(lattice,1, gens, mat, dim, phdim)
 
     
 
@@ -159,7 +162,7 @@ function runMC(T)
     dim=3           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
-    phdim=1
+    phdim=2
 
     # MPI.Initialized() || MPI.Init()
     # commSize = MPI.Comm_size(MPI.COMM_WORLD)

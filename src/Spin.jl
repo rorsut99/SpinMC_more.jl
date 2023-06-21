@@ -121,8 +121,8 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim},gens::Generator
         E2 += exchangeEnergy(tempS2, interactionMatrices[i], tempS3)
     end
 
-    dE += (spinPhononCoupling(lattice, tempS1, p1) - spinPhononCoupling(lattice, tempS2, p1))
-
+    E1 += spinPhononCoupling(lattice, tempS1, p1)
+    E2 += spinPhononCoupling(lattice, tempS2, p1)
     #onsite interaction
     #interactionOnsite = getInteractionOnsite(lattice, site)
     #dE += exchangeEnergy(newState, interactionOnsite, newState) - exchangeEnergy(oldState, interactionOnsite, oldState)
@@ -293,7 +293,6 @@ function quadSpinInteraction(lattice::Lattice{D,N,dim,phdim},gens::Generators, s
 
     return (-K*res.re)
 end
-
 
 
 

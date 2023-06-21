@@ -124,6 +124,7 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
             #propose new spin configuration
             newPhState = uniformDist(phdim, mc.lattice.Qmax)
             energyDifference = getPhononEnergyDifference(mc.lattice, gens, site, newPhState)
+            
 
             #check acceptance of new configuration
             statistics.attemptedLocalUpdates += 1

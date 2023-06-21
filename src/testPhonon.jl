@@ -30,7 +30,7 @@ function makeGenerators(dim::Int)
         # calculate norm
         norm = sx^2 + sy^2 + sz^2
 
-        generators = [sx, sy, sz]/sqrt(norm[1])
+        generators = [sy, sz, sx]
 
     elseif (dim==3)
         # Gell-Mann matrices
@@ -115,15 +115,15 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim,dim)
 
-    xInt=-0.1*[1.0 0 0
+    xInt=0.0*[1.0 0 0
             0 0 0
             0 0 0]
 
-    yInt=-1.0*[0.0 0 0
+    yInt=0.0*[0.0 0 0
             0 1.0 0
             0 0 0]
 
-    zInt=-0.1*[0.0 0 0
+    zInt=0.0*[0.0 0 0
             0 0.0 0
              0 0 1.0]
 
@@ -149,18 +149,25 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     
 
-    Lsize=(16,16)       # size of lattice
+    Lsize=(8,8)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
     
 
-    spring = [1.0,1.0]
-    mat = [0.0 0 
+    spring = 0.0*[1.0,1.0]
+    mat = -1.0*[0.3 0 
     0 0.0 
-    0 0 ]
+    0 -0.0
+    0 0.0 
+    0 -0.0
+    0 0.0 
+    0 -0.0
+    0 0.0 
+    0 -0.0]
 
+    order=2
     addSpringConstant!(lattice, spring, phdim)
-    addPhononInteraction!(lattice, gens, mat, dim, phdim)
+    addPhononInteraction!(lattice,order, gens, mat, dim, phdim)
 
     
 
@@ -191,8 +198,8 @@ function runMC(T)
     # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
     # set sweeps
-    thermSweeps=10
-    sampleSweeps=10
+    thermSweeps=1000
+    sampleSweeps=1000
 
     # temp=ones(length(T))
     # tmin=0.1
@@ -206,7 +213,7 @@ function runMC(T)
     # beta = temp./T
     # T = 1000.0
     lattice,gens = makeLattice(dim, dim2, phdim)
-    lattice.Qmax = 0.05
+    lattice.Qmax = 1.0
 
     # run Monte Carlo sweeps
     m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,dim,replicaExchangeRate=10)
@@ -228,7 +235,15 @@ end
 
 
 
-m,gens=runMC(0.01)
+m,gens=runMC(0.001)
 
+
+
+
+# plot energy vs sweeps
+title = string("SU(", dim, ") FM interaction")
+plot(m.energySeries, title=title)
+xlabel!("sweeps")
+ylabel!("energy density")
 
 
