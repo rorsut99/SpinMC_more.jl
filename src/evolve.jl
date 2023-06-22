@@ -70,14 +70,14 @@ function evolve_spins(gens,evs,site,dim)
         mat=zeros(dim^2,dim^2)
         for i in 1:dim^2
             for j in 1:dim^2
-                mat[i,j]=sum((evs.structureFactors.*x)[i,j])
+                mat[i,j]=sum((evs.structureFactors.*x[1:dim^2])[i,j])
             end
         end
-        
 
-        xdot[:] = mat*output
+        coupling = evs.lattice.phononCoupling
+        vec = coupling*x[dim^2:end]
 
-
+        xdot[1:dim^2] = mat*output + mat*vec
     end
 
 
