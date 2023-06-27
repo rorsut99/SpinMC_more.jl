@@ -19,7 +19,7 @@ mutable struct Lattice{D,N,dim,phdim}
     interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
 
 
-    expVals::Vector{Vector{Float64}}
+    expVals::Matrix{Float64}
     Lattice(D,N,dim,phdim) = new{D,N,dim,phdim}()
 end
 
@@ -99,6 +99,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
     #Updated dimension of spins object
     lattice.spins = Array{Float64,2}(undef, dim, length(sites))
     lattice.phonons = Array{Float64,2}(undef, phdim, length(sites))
+    lattice.expVals = Array{Float64,2}(undef, dim^2, length(sites))
 
     lattice.springConstants = zeros(phdim)
 
@@ -109,7 +110,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
     lattice.interactionSites = repeat([ NTuple{Ninteractions,Int}(ones(Int,Ninteractions)) ], lattice.length)
     lattice.interactionMatrices = repeat([ NTuple{Ninteractions,InteractionMatrix}(repeat([InteractionMatrix(dim)],Ninteractions)) ], lattice.length)
     lattice.interactionOnsite = repeat([InteractionMatrix(dim)], lattice.length)
-    lattice.interactionField = repeat( [Tuple(zeros(dim^2-1))], lattice.length)
+    lattice.interactionField = repeat( [Tuple(zeros(dim^2))], lattice.length)
 
     function applyPBC(n, L)
         while n < 0; n += L end
@@ -128,7 +129,7 @@ function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
         lattice.interactionOnsite[i] = InteractionMatrix(uc.interactionsOnsite[b])
 
         #field interaction
-        lattice.interactionField[i] = NTuple{dim,Float64}(uc.interactionsField[b])
+        lattice.interactionField[i] = (uc.interactionsField[b])
 
         #two-spin interactions
         interactionSites = repeat([i], Ninteractions)
@@ -202,7 +203,7 @@ function getInteractionOnsite(lattice::Lattice{D,N,dim,phdim}, site::Int)::Inter
     return lattice.interactionOnsite[site]
 end
 
-function getInteractionField(lattice::Lattice{D,N,dim,phdim}, site::Int)::NTuple{dim,Float64} where {D,N,dim,phdim}
+function getInteractionField(lattice::Lattice{D,N,dim,phdim}, site::Int) where {D,N,dim,phdim}
     return lattice.interactionField[site]
 end
 

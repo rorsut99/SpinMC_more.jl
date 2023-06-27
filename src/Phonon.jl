@@ -52,3 +52,11 @@ function couplingMatrix(gens,order, M, dim, phdim)
 
     return res
 end
+
+function getPhononMomentum(evs, site::Int) 
+    return (evs.phononMomentaPrev[:,site])
+end
+
+function setPhononMomentum!(evs, site::Int, newState::Vector{Float64}) 
+    evs.phononMomenta[:,site] = newState
+end

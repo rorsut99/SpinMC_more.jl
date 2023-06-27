@@ -227,14 +227,15 @@ end
 
 
 function finalState!(lattice::Lattice{D,N,dim,phdim},gens::Generators,d) where {D,N,dim,phdim}
-    expVals=Vector{Vector{Float64}}(undef,length(lattice))
+    expVals=zeros(dim^2,length(lattice))
+    Id=Matrix(1.0I,d,d)
     for site in 1:length(lattice)
         s1=getSpin(lattice,site)
         vec=genExpVals(s1,gens,d)
-        expVals[site]=vec
+        push!(vec,calcInnerProd(getSpin(lattice,site),Id,getSpin(lattice,site)))
+        expVals[:,site]=vec
     end
     lattice.expVals=expVals
-
 end
 
 

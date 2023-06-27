@@ -68,9 +68,24 @@ function setInteractionOnsite!(unitcell::UnitCell{D}, b::Int, M::Matrix{Float64}
     unitcell.interactionsOnsite[b] = M
 end
 
-function setField!(unitcell::UnitCell{D}, b::Int, B::Vector{Float64},dim::Int) where D
-    size(B) == (dim,) || error(string("Field must be a vector of length ",dim,"."))
-    unitcell.interactionsField[b] = B
+function setField!(unitcell::UnitCell{D},gens, b::Int, B::Vector{Float64},dim::Int) where D
+    size(B) == (3,) || error(string("Field must be a vector of length ",3,"."))
+
+    print(B,"\n")
+    vec=getField(B,gens,dim)
+    print(vec,"\n")
+    unitcell.interactionsField[b] = vec
+    print(unitcell.interactionsField[b] ,"\n")
+end
+
+
+function getField(V,gens,dim)
+    res=zeros(dim^2)
+    for i in 1:length(V)
+        res+=V[i]*gens.genReps[4,i]
+    end
+
+    return (res)
 end
 
 function addBasisSite!(unitcell::UnitCell{D}, position::NTuple{D,Float64},dim::Int) where D

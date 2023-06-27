@@ -29,7 +29,7 @@ function makeGenerators(dim::Int)
         # calculate norm
         norm = sx^2 + sy^2 + sz^2
 
-        generators = [sx, sy, sz]/sqrt(norm[1])
+        generators = [sy, sz, sx]
 
     elseif (dim==3)
         # Gell-Mann matrices
@@ -75,76 +75,12 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     gens=initGen(dim)
 
-    # Sx=[0+0.0im 1.0+0im 
-    # 1.0+0im 0+0im]
-    # Sy=[0 -1.0im
-    # 1.0im 0]
-    # Sz=[1.0+0im 0
-    # 0 -1.0+0im]
-
-    Sx=[0 0 1.0+0im
-    0 0 1
-    1 1 0]/sqrt(2)
-
-    Sy=(-1im/sqrt(2))*[0 0 1.0+0im
-    0 0 -1
-    -1 1 0]
-
-    Sz=[1.0+0im 0 0
-    0 -1 0
-    0 0 0]
-
-    addSpinOperator!(gens,Sy,3)
-    addSpinOperator!(gens,Sz,3)
-    addSpinOperator!(gens,Sx,3)
- 
-
-    generators = makeGenerators(dim)
-
-    # push generators to lattice struct
-    for gen in generators
-        addGenerator!(gens,gen,dim)
-    end
-    setGenReps!(gens,3)
-
-
-    uc = UnitCell(a1,a2)
-    FMint = Matrix(-1.50I,dim,dim)      # Heisenberg interaction
-    AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
-    Zero = Matrix(0.0I,dim,dim)
-    addBasisSite!(uc,(0.0,0.0),dim)
-    # nearest neighbour interaction
-    # added parameter to take in the order of the term in the hamiltonian
-    # bilinear interaction
-    addInteraction!(uc,gens,1,1,AFMint,1,dim,(1,0))
-    addInteraction!(uc,gens,1,1,AFMint,1,dim,(0,1))
-    addInteraction!(uc,gens,1,1,AFMint,1,dim,(1,-1))
-
-    B=[1.0,0,0]
-    setField!(uc,gens,1,B,dim)
-
-    # # biquadratic interaction
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(1,0))
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(0,1))
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(1,-1))
-
-    
-
-    Lsize=(16,16)       # size of lattice
-    lattice=Lattice(uc,Lsize,dim,phdim)
-
-    
-
-    spring = [1.0,1.0]
-    # mat = [1.0; 0.0; 0.0 ;;]
-    mat =[1.0 0.0
-        0.0  0.0
-        0.0  1.0]
-
-    addSpringConstant!(lattice, spring, phdim)
-    addPhononInteraction!(lattice,1, gens, mat, dim, phdim)
-
-    
+    Sx=[0+0.0im 1.0+0im 
+    1.0+0im 0+0im]
+    Sy=[0 -1.0im
+    1.0im 0]
+    Sz=[1.0+0im 0
+    0 -1.0+0im]
 
     # Sx=[0 0 1.0+0im
     # 0 0 1
@@ -158,12 +94,49 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     # 0 -1 0
     # 0 0 0]
 
+    addSpinOperator!(gens,Sy,2)
+    addSpinOperator!(gens,Sz,2)
+    addSpinOperator!(gens,Sx,2)
+ 
+
+    generators = makeGenerators(dim)
+
+    # push generators to lattice struct
+    for gen in generators
+        addGenerator!(gens,gen,dim)
+    end
+    setGenReps!(gens,2)
+
+
+    uc = UnitCell(a1,a2)
+    FMint = Matrix(-1.50I,dim,dim)      # Heisenberg interaction
+    AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
+    Zero = Matrix(0.0I,dim,dim)
+    addBasisSite!(uc,(0.0,0.0),dim)
+    # nearest neighbour interaction
+    # added parameter to take in the order of the term in the hamiltonian
+
+    B=[0.0,0,1.0]
+    setField!(uc,gens,1,B,dim)   
+
+    Lsize=(16,16)       # size of lattice
+    lattice=Lattice(uc,Lsize,dim,phdim)
+
+    spring = [1.0,1.0]
+    # mat = [1.0; 0.0; 0.0 ;;]
+    mat =[0.0 0.0
+        0.0  0.0
+        0.0  0.0]
+
+    addSpringConstant!(lattice, spring, phdim)
+    addPhononInteraction!(lattice,1, gens, mat, dim, phdim)
+
     return (lattice,gens)
 end
 
 function runMC(T)
     # define dimensions
-    dim=3           # dimension of wavefunction (N)
+    dim=2           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
     phdim=2
@@ -173,8 +146,8 @@ function runMC(T)
     # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
     # set sweeps
-    thermSweeps=10
-    sampleSweeps=10
+    thermSweeps=100
+    sampleSweeps=100
 
     # temp=ones(length(T))
     # tmin=0.1
@@ -208,47 +181,38 @@ function runMC(T)
     # return mean(m.observables.energy, c)
 end
 
-# Tvals = LinRange(0.1, 8, 40)
-# heat = zeros(40)
-# for i in 1:length(Tvals)
-#     heat[i] = runMC(Tvals[i])
-# end
-
-#  # plot energy vs sweeps
-# title = string("SU(", dim, ") FM heat capacity")
-# plot(Tvals, heat, title=title)
-# xlabel!("T")
-# ylabel!("C")
-
-
-# Tpoints=30
-# Tvals = LinRange(0.1, 0.7, Tpoints)
-# heat = zeros(Tpoints)
-
 m,gens=runMC(0.01)
 
+evs = initEv(2, m.lattice, gens, (0,0.1), 2)
+setPhononMass!(evs, [1.0, 1.0], 2)
+setStructureFactors!(evs, gens, 2)
+n = 400
+x = zeros(n)
+y = zeros(n)
 
-# for i in 1:length(Tvals)
-#     heat[i] = runMC(Tvals[i])
-# end
+phx = zeros(n)
+phz = zeros(n)
 
 
-# title = string("SU(", dim, ") FM heat capacity")
-# plot(Tvals, heat, title=title)
-# xlabel!("T")
-# ylabel!("C")
+T=0.1
+# print(evs.lattice.expVals[:,5], "\n")
+initPhMomentum!(evs,T,phdim)
+evs.phononMomentaPrev = copy(evs.phononMomenta)
 
-# dim=2        # dimension of wavefunction (N)
-# dim2=dim^2-1    # dimension of spin vector (N^2-1)
+print(evs.lattice.phonons[1,1])
+for i in 1:n
+    evolve!(evs, gens, 2, 2, T, 1)
+    x[i] = evs.lattice.expVals[1,5]
+    y[i] = evs.lattice.expVals[2,5]
 
-# phdim=4
+    phx[i] = evs.lattice.phonons[1,1]
+    phz[i] = evs.lattice.phonons[2,1]
+end
 
-# lattice,generators=makeLattice(dim,dim2,phdim)
+title = string("time evolution")
+# plot(x, y, title=title)
+# xlabel!("Sx")
+# ylabel!("Sy")
 
-# m=runMC(0.01)
-# print(m.energySeries)
-# # plot energy vs sweeps
-# title = string("SU(", dim, ") FM interaction")
-# plot(m.energySeries, title=title)
-# xlabel!("sweeps")
-# ylabel!("energy density")
+plot(phx,title=title)
+
