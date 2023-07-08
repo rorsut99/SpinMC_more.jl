@@ -109,14 +109,17 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
 
     uc = UnitCell(a1,a2)
-    FMint = Matrix(-1.50I,dim,dim)      # Heisenberg interaction
-    AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
-    Zero = Matrix(0.0I,dim,dim)
+    FMint = Matrix(-1.0I,dim2,dim2)      # Heisenberg interaction
+    AFMint = Matrix(1.0I,dim2,dim2)      # Heisenberg interaction
+    Zero = Matrix(0.0I,dim2,dim2)
     addBasisSite!(uc,(0.0,0.0),dim)
+
+    addInteraction!(uc,gens,1,1,FMint,1,dim,(1,0))
+    addInteraction!(uc,gens,1,1,FMint,1,dim,(0,1))
     # nearest neighbour interaction
     # added parameter to take in the order of the term in the hamiltonian
 
-    B=[0.0,0,1.0]
+    B=[0.0,0,0.0]
     setField!(uc,gens,1,B,dim)   
 
     Lsize=(16,16)       # size of lattice
@@ -181,14 +184,36 @@ function runMC(T)
     # return mean(m.observables.energy, c)
 end
 
-m,gens=runMC(0.01)
+m,gens=runMC(0.001)
 
-evs = initEv(2, m.lattice, gens, (0,0.1), 2)
+evs = initEv(2, m.lattice, gens, (0,0.01), 2)
 setPhononMass!(evs, [1.0, 1.0], 2)
+setPhononDamp!(evs,[0.1,0.1],2)
 setStructureFactors!(evs, gens, 2)
+
+function drive(t)
+    x=0.000*cos(t)
+    return (x)
+end
+
+
+
+
+driveFuncs=[drive,drive]
+
+
+addPhononDrive!(evs,driveFuncs,2)
+
+
+
+
+
+
+
 n = 400
 x = zeros(n)
 y = zeros(n)
+z = zeros(n)
 
 phx = zeros(n)
 phz = zeros(n)
@@ -196,23 +221,27 @@ phz = zeros(n)
 
 T=0.1
 # print(evs.lattice.expVals[:,5], "\n")
-initPhMomentum!(evs,T,phdim)
+initPhMomentum!(evs,T,2)
 evs.phononMomentaPrev = copy(evs.phononMomenta)
 
-print(evs.lattice.phonons[1,1])
+# print(evs.lattice.phonons[1,1])
+# print(evs.lattice.expVals)
 for i in 1:n
     evolve!(evs, gens, 2, 2, T, 1)
-    x[i] = evs.lattice.expVals[1,5]
-    y[i] = evs.lattice.expVals[2,5]
+    x[i] = evs.lattice.expVals[1,32]
+    y[i] = evs.lattice.expVals[2,32]
+    z[i] = evs.lattice.expVals[3,32]
 
     phx[i] = evs.lattice.phonons[1,1]
     phz[i] = evs.lattice.phonons[2,1]
 end
 
 title = string("time evolution")
-# plot(x, y, title=title)
-# xlabel!("Sx")
-# ylabel!("Sy")
+plot(x, y, title=title)
+xlabel!("Sx")
+ylabel!("Sy")
 
-plot(phx,title=title)
+# t=LinRange(1,n,n)
+# fit=maximum(phx).*exp.(-(evs.phononDamp[1].*(0.1*t)))
+# plot(0.1*t,[phx],title=title)
 

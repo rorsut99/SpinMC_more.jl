@@ -12,7 +12,11 @@ mutable struct Evolution
     phononMomenta::Matrix{Float64}
     phononMass::Vector{Float64}
     phononDamp::Vector{Float64}
+    phononDrive::Vector{Function}
+    timeStep::Float64
     tspan::Tuple
+
+    obs::EvolveObservables
 
     Evolution()=new{}()
 end
@@ -20,15 +24,51 @@ end
 
 function initEv(dim,lattice,gens,timeStep,phdim)
     evs = Evolution()
-    finalState!(lattice,gens,dim)
+    # finalState!(lattice,gens,dim)
     evs.structureFactors = Matrix{Vector{ComplexF64}}(undef,dim^2,dim^2)
-    evs.lattice = lattice
-    evs.latticePrev = lattice
+    evs.lattice = deepcopy(lattice)
+    evs.latticePrev = deepcopy(lattice)
     evs.tspan = timeStep
     evs.phononMass = zeros(phdim)
     evs.phononDamp = zeros(phdim)
+    evs.phononDrive = Vector{Function}(undef,phdim)
     evs.phononMomenta = Array{Float64,2}(undef, phdim, lattice.length)
     evs.phononMomentaPrev = Array{Float64,2}(undef, phdim, lattice.length)
+    setTimeStep!(evs)
+    evs.obs=initEvolveObservables()
+
+    function noDrive(t)
+        x=0
+        return(x)
+    end
+
+    for i in 1:phdim
+        evs.phononDrive[i]=noDrive
+    end
+
+
+
+
+    expVals=zeros(dim^2,length(lattice))
+    for site in 1:length(lattice)
+        if site==1
+            vec=[0,0.2,1.0]
+            vec/=norm(vec)
+            push!(vec,1.0)
+            expVals[:,site]=vec
+        else
+            vec=[0,0,1.0,1.0]
+            expVals[:,site]=vec
+        end
+    end
+
+    evs.lattice.expVals=deepcopy(expVals)
+    evs.latticePrev.expVals=deepcopy(expVals)
+
+    lattice.expVals=deepcopy(expVals)
+
+
+        
 
 
     return evs
@@ -112,6 +152,10 @@ function evolve_spin(gens,evs,site,dim)
         output+=Jex*s1
     end
 
+    # if site==1
+    #     print(output,"\n")
+    # end
+
 
     function update(xdot,x,p,t)
         mat=zeros(dim^2,dim^2)
@@ -147,6 +191,7 @@ function evolve_phonon(gens,evs,site,dim,phdim)
 
     coupling = evs.lattice.phononCoupling
     springConst = evs.lattice.springConstants
+    damping = evs.phononDamp
 
 
 
@@ -154,9 +199,25 @@ function evolve_phonon(gens,evs,site,dim,phdim)
 
     
 
+    # function update(xdot,x,p,t)
+    #     alpha=damping./(evs.phononMass)
+    #     xdot[1:phdim] = -(x[phdim+1:end]./(evs.phononMass)).*exp.(-alpha*t)
+    #     xdot[phdim+1:end] = springConst.*x[1:phdim].*exp.(alpha*t)+vec.*exp.(alpha*t/2)
+
+    #     for i in 1:phdim
+    #         xdot[i+phdim] -= evs.phononDrive[i](t)*exp(alpha[i]*t/2)
+    #     end
+    # end
+
+
     function update(xdot,x,p,t)
-        xdot[1:phdim] = x[phdim+1:end]./(evs.phononMass)
+        xdot[1:phdim] = (x[phdim+1:end]./(evs.phononMass))-damping.*x[1:phdim]
         xdot[phdim+1:end] = -springConst.*x[1:phdim]-vec
+        for i in 1:phdim
+            xdot[i+phdim] += evs.phononDrive[i](t)
+        end
+
+
     end
 
 
@@ -165,6 +226,20 @@ function evolve_phonon(gens,evs,site,dim,phdim)
 
     return (last(sol.u))
 end
+
+function addPhononDrive!(evs,driveFunctions,phd)
+    length(driveFunctions) == (phd) || error(string("Phonon drive functions must be of size ",phd,"."))
+    evs.phononDrive = driveFunctions
+end
+
+function updateTimeSpan!(evs,stepSize, iteration)
+    evs.tspan = (evs.tspan[2], evs.tspan[2]+(stepSize*iteration))
+end
+
+function setTimeStep!(evs)
+    evs.timeStep=evs.tspan[2]-evs.tspan[1]
+end
+
 
 
 
@@ -177,9 +252,11 @@ function evolve!(evs,gens,dim,phdim,T,numSteps)
             setExpValSpin!(evs,site,spin)
             setPhonon!(evs.lattice,site,phonon[1:phdim])
             setPhononMomentum!(evs,site,phonon[phdim+1:end])
+            
         end
-        evs.phononMomentaPrev = copy(evs.phononMomenta)
+        evs.phononMomentaPrev = deepcopy(evs.phononMomenta)
         evs.latticePrev = deepcopy(evs.lattice)
+        updateTimeSpan!(evs,evs.timeStep,i)
 
     end
 
