@@ -8,6 +8,7 @@ include("MonteCarlo.jl")
 include("Helper.jl")
 include("IO.jl")
 include("Phonon.jl")
+include("EvolveObservables.jl")
 include("evolve.jl")
 
 using LinearAlgebra
@@ -114,8 +115,8 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     Zero = Matrix(0.0I,dim2,dim2)
     addBasisSite!(uc,(0.0,0.0),dim)
 
-    addInteraction!(uc,gens,1,1,FMint,1,dim,(1,0))
-    addInteraction!(uc,gens,1,1,FMint,1,dim,(0,1))
+    # addInteraction!(uc,gens,1,1,FMint,1,dim,(1,0))
+    # addInteraction!(uc,gens,1,1,FMint,1,dim,(0,1))
     # nearest neighbour interaction
     # added parameter to take in the order of the term in the hamiltonian
 
@@ -127,8 +128,8 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     spring = [1.0,1.0]
     # mat = [1.0; 0.0; 0.0 ;;]
-    mat =[0.0 0.0
-        0.0  0.0
+    mat =[1.0 0.0
+        0.0  1.0
         0.0  0.0]
 
     addSpringConstant!(lattice, spring, phdim)
@@ -186,9 +187,9 @@ end
 
 m,gens=runMC(0.001)
 
-evs = initEv(2, m.lattice, gens, (0,0.01), 2)
+evs = initEv(2, m.lattice, gens, (0,0.1), 2)
 setPhononMass!(evs, [1.0, 1.0], 2)
-setPhononDamp!(evs,[0.1,0.1],2)
+setPhononDamp!(evs,[0.8,0.8],2)
 setStructureFactors!(evs, gens, 2)
 
 function drive(t)
@@ -199,10 +200,10 @@ end
 
 
 
-driveFuncs=[drive,drive]
+# driveFuncs=[drive,drive]
 
 
-addPhononDrive!(evs,driveFuncs,2)
+# addPhononDrive!(evs,driveFuncs,2)
 
 
 
@@ -222,12 +223,14 @@ phz = zeros(n)
 T=0.1
 # print(evs.lattice.expVals[:,5], "\n")
 initPhMomentum!(evs,T,2)
-evs.phononMomentaPrev = copy(evs.phononMomenta)
+evs.phononMomentaPrev = deepcopy(evs.phononMomenta)
 
 # print(evs.lattice.phonons[1,1])
 # print(evs.lattice.expVals)
 for i in 1:n
     evolve!(evs, gens, 2, 2, T, 1)
+    energy = getEvEnergy(evs,gens)
+    measureEvObservables!(evs, energy/length(evs.lattice))
     x[i] = evs.lattice.expVals[1,32]
     y[i] = evs.lattice.expVals[2,32]
     z[i] = evs.lattice.expVals[3,32]
@@ -236,10 +239,17 @@ for i in 1:n
     phz[i] = evs.lattice.phonons[2,1]
 end
 
-title = string("time evolution")
-plot(x, y, title=title)
-xlabel!("Sx")
-ylabel!("Sy")
+# title = string("time evolution")
+# plot(x, y, title=title)
+# xlabel!("Sx")
+# ylabel!("Sy")
+
+# print(evs.obs.energySeries)
+
+title = string("time evolution energy")
+plot(evs.obs.energySeries, title=title)
+xlabel!("time")
+ylabel!("energy")
 
 # t=LinRange(1,n,n)
 # fit=maximum(phx).*exp.(-(evs.phononDamp[1].*(0.1*t)))
