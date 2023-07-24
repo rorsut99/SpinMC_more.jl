@@ -6,7 +6,9 @@ mutable struct EvolveObservables
     spinStates::FullBinner{Matrix{Float64}}
     phononPosition::FullBinner{Matrix{Float64}}
     phononMomenta::FullBinner{Matrix{Float64}}
-    energySeries::Vector{Float64}
+    totalEnergySeries::Vector{Float64}
+    spinEnergySeries::Vector{Float64}
+    phononEnergySeries::Vector{Float64}
 
     EvolveObservables()=new{}()
 end
@@ -17,12 +19,16 @@ function initEvolveObservables()
     evsObs.spinStates=FullBinner(Matrix{Float64})
     evsObs.phononPosition=FullBinner(Matrix{Float64})
     evsObs.phononMomenta=FullBinner(Matrix{Float64})
-    evsObs.energySeries=Vector{Float64}()
+    evsObs.spinEnergySeries=Vector{Float64}()
+    evsObs.phononEnergySeries=Vector{Float64}()
+    evsObs.totalEnergySeries=Vector{Float64}()
 
     return(evsObs)
 end
 
-function getEvEnergy(evs,gens::Generators)::Float64
+function getEvEnergy(evs,gens::Generators)
+    spinEnergy = 0.0
+    phEnergy = 0.0
     energy = 0.0
     d=size(gens.spinOperators[1])[1]
     Id=Matrix((1.0+0im)I,d,d)
@@ -40,33 +46,41 @@ function getEvEnergy(evs,gens::Generators)::Float64
         interactionMatrices = getInteractionMatrices(evs.latticePrev, site)
         for i in 1:length(interactionSites)
             # get vector of exp values for interaction site
-            s1 = getExpValSpin(evs, i)
+            s1 = getExpValSpin(evs, interactionSites[i])
             # tempS1=copy(s1)
             # push!(tempS1,calcInnerProd(getSpin(lattice,interactionSites[i]),Id,getSpin(lattice,interactionSites[i])))
             if site > interactionSites[i]
-                energy += exchangeEnergy(s0, interactionMatrices[i], s1)
+                spinEnergy += exchangeEnergy(s0, interactionMatrices[i], s1)
             end
         end
 
-        energy += phononPotentialEnergy(evs.latticePrev, p0)
+        phEnergy += phononPotentialEnergy(evs.latticePrev, p0)
         energy += spinPhononCoupling(evs.latticePrev, s0, p0)
-        energy += (evs.phononMomentaPrev[1,site]^2)/(2*evs.phononMass[1])
-        energy += (evs.phononMomentaPrev[2,site]^2)/(2*evs.phononMass[2])
+        phEnergy += sum((evs.phononMomentaPrev[:,site] .^ 2) ./ (2 .* evs.phononMass))
+        # energy += (evs.phononMomentaPrev[2,site]^2)/(2*evs.phononMass[2])
+
+        damping = evs.phononDamp
+        phEnergy -= dot(damping.*p0, evs.phononMomentaPrev[:,site])
 
         #onsite interaction
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
 
         #field interaction
-        #energy += dot(s0, getInteractionField(lattice, site))
+        # spinEnergy += dot(s0, getInteractionField(evs.lattice, site))
     end
 
-    return energy
+    energy += spinEnergy
+    energy += phEnergy
+
+    return spinEnergy, phEnergy, energy
 end
 
 
-function measureEvObservables!(evs, energy)
+function measureEvObservables!(evs, spinEnergy, phEnergy, energy)
     push!(evs.obs.spinStates, evs.lattice.expVals)
     push!(evs.obs.phononPosition, evs.lattice.phonons)
     push!(evs.obs.phononMomenta, evs.phononMomenta)
-    push!(evs.obs.energySeries, energy)
+    push!(evs.obs.spinEnergySeries, spinEnergy)
+    push!(evs.obs.phononEnergySeries, phEnergy)
+    push!(evs.obs.totalEnergySeries, energy)
 end

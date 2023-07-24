@@ -24,7 +24,7 @@ end
 
 function initEv(dim,lattice,gens,timeStep,phdim)
     evs = Evolution()
-    # finalState!(lattice,gens,dim)
+    finalState!(lattice,gens,dim) # save the final MC state to lattice.expVals
     evs.structureFactors = Matrix{Vector{ComplexF64}}(undef,dim^2,dim^2)
     evs.lattice = deepcopy(lattice)
     evs.latticePrev = deepcopy(lattice)
@@ -37,6 +37,7 @@ function initEv(dim,lattice,gens,timeStep,phdim)
     setTimeStep!(evs)
     evs.obs=initEvolveObservables()
 
+    # function that is used in the evs.drive object if no drive is specified
     function noDrive(t)
         x=0
         return(x)
@@ -49,23 +50,23 @@ function initEv(dim,lattice,gens,timeStep,phdim)
 
 
 
-    expVals=zeros(dim^2,length(lattice))
-    for site in 1:length(lattice)
-        if site==1
-            vec=[0,0.2,1.0]
-            vec/=norm(vec)
-            push!(vec,1.0)
-            expVals[:,site]=vec
-        else
-            vec=[0,0,1.0,1.0]
-            expVals[:,site]=vec
-        end
-    end
+    # expVals=zeros(dim^2,length(lattice))
+    # for site in 1:length(lattice)
+    #     if site==1
+    #         vec=[0.0,0.2,1.0]
+    #         vec/=norm(vec)
+    #         push!(vec,1.0)
+    #         expVals[:,site]=vec
+    #     else
+    #         vec=[0.0,0,1.0,1.0]
+    #         expVals[:,site]=vec
+    #     end
+    # end
 
-    evs.lattice.expVals=deepcopy(expVals)
-    evs.latticePrev.expVals=deepcopy(expVals)
+    # evs.lattice.expVals=deepcopy(expVals)
+    # evs.latticePrev.expVals=deepcopy(expVals)
 
-    lattice.expVals=deepcopy(expVals)
+    # lattice.expVals=deepcopy(expVals)
 
 
         
@@ -74,9 +75,10 @@ function initEv(dim,lattice,gens,timeStep,phdim)
     return evs
 end
 
+# initi
 function initPhMomentum!(evs,T,phd)
     for site in 1:length(evs.lattice)
-        P=rand(Uniform(0,1),2)
+        P=rand(Uniform(0,1),phd)
         p0=getPhonon(evs.latticePrev,site)
 
 
@@ -127,7 +129,7 @@ function setStructureFactors!(evs,gens,dim)
         for j in 1:dim^2
             res=mats[i]*mats[j]-mats[j]*mats[i]
             vec=decomposeMat(gens,res,dim)
-            evs.structureFactors[i,j]=1im*vec
+            evs.structureFactors[i,j]=-1im*vec
 
         end
     end
@@ -153,7 +155,14 @@ function evolve_spin(gens,evs,site,dim)
     end
 
     # if site==1
-    #     print(output,"\n")
+    #     print("output: ", output,"\n")
+    #     mat=zeros(dim^2,dim^2)
+    #     for i in 1:dim^2
+    #         for j in 1:dim^2
+    #             mat[i,j]=dot(evs.structureFactors[i,j], s0)
+    #         end
+    #     end
+    #     print("mat*output: ", mat*output, "\n")
     # end
 
 
@@ -171,9 +180,9 @@ function evolve_spin(gens,evs,site,dim)
         xdot[:] = mat*output + mat*vec + mat*interactionField
     end
 
-
+    alg = Tsit5()
     spin_prob = ODEProblem(update,s0,evs.tspan)
-    sol = solve(spin_prob)
+    sol = solve(spin_prob, alg)
 
 
 
@@ -220,9 +229,9 @@ function evolve_phonon(gens,evs,site,dim,phdim)
 
     end
 
-
+    alg = Tsit5()
     phononProb = ODEProblem(update,x0,evs.tspan)
-    sol = solve(phononProb)
+    sol = solve(phononProb, alg)
 
     return (last(sol.u))
 end
@@ -233,7 +242,7 @@ function addPhononDrive!(evs,driveFunctions,phd)
 end
 
 function updateTimeSpan!(evs,stepSize, iteration)
-    evs.tspan = (evs.tspan[2], evs.tspan[2]+(stepSize*iteration))
+    evs.tspan = (evs.tspan[2], evs.tspan[2]+(stepSize))
 end
 
 function setTimeStep!(evs)
@@ -248,15 +257,16 @@ function evolve!(evs,gens,dim,phdim,T,numSteps)
     for i in 1:numSteps
         for site in 1:length(evs.lattice)
             spin=evolve_spin(gens,evs,site,dim)
-            phonon=evolve_phonon(gens,evs,site,dim,phdim)
+            # phonon=evolve_phonon(gens,evs,site,dim,phdim)
             setExpValSpin!(evs,site,spin)
-            setPhonon!(evs.lattice,site,phonon[1:phdim])
-            setPhononMomentum!(evs,site,phonon[phdim+1:end])
+            # setPhonon!(evs.lattice,site,phonon[1:phdim])
+            # setPhononMomentum!(evs,site,phonon[phdim+1:end])
             
         end
-        evs.phononMomentaPrev = deepcopy(evs.phononMomenta)
+        # evs.phononMomentaPrev = deepcopy(evs.phononMomenta)
         evs.latticePrev = deepcopy(evs.lattice)
         updateTimeSpan!(evs,evs.timeStep,i)
+        # print(i, "\n")
 
     end
 
