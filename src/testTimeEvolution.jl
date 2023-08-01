@@ -110,7 +110,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
 
     uc = UnitCell(a1,a2)
-    FMint = Matrix(-1.0I,dim,dim)      # Heisenberg interaction
+    FMint = Matrix(-1.0I,3,3)      # Heisenberg interaction
     AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim,dim)
     addBasisSite!(uc,(0.0,0.0),dim)
@@ -129,7 +129,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     Lsize=(16,16)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
-    spring = [1.0,1.0, 1.0]
+    spring = [0.0,0.0, 0.0]
     # mat = [1.0; 0.0; 0.0 ;;]
     mat =[0.0 0.0 0.0
         0.0  0.0 0.0
@@ -191,7 +191,7 @@ end
 
 function runMD(tstep, dim, phdim)
 
-    m,gens=runMC(1)
+    m,gens=runMC(0.1)
 
     evs = initEv(2, m.lattice, gens, (0,tstep), phdim)
     setPhononMass!(evs, [1.0, 1.0, 1.0], phdim)
@@ -217,7 +217,7 @@ function runMD(tstep, dim, phdim)
 
 
 
-    n = Int(20/tstep)
+    n = Int(10/tstep)
     x = zeros(n)
     y = zeros(n)
     z = zeros(n)
@@ -238,7 +238,7 @@ function runMD(tstep, dim, phdim)
 
     # print(evs.lattice.phonons[1,1])
     # print(evs.lattice.expVals)
-    spinEnerg, phEnerg, totalEnerg = getEvEnergy(evs,gens)
+    spinEnerg, phEnerg, totalEnerg = getEvEnergy(evs,gens, evs.latticePrev)
     print("Initial MD energy: ", spinEnerg/length(evs.lattice), "\n")
 
 
@@ -263,7 +263,8 @@ function runMD(tstep, dim, phdim)
         s[i] = sqrt(x[i]^2 + y[i]^2 + z[i]^2)
 
         evolve!(evs, gens, 2, 3, T, 1)
-        spinEnergy, phEnergy, totalEnergy = getEvEnergy(evs,gens)
+        # add if statement for checkStability
+        spinEnergy, phEnergy, totalEnergy = getEvEnergy(evs,gens,evs.latticePrev)
         measureEvObservables!(evs, spinEnergy/length(evs.lattice), phEnergy/length(evs.lattice), totalEnergy/length(evs.lattice))
 
         # phx[i] = evs.lattice.phonons[1,1]
@@ -287,20 +288,20 @@ end
 
 # print(evs.obs.energySeries)
 
-stepSizes = [0.1, 0.05, 0.01, 0.005, 0.001]
-t1 = Vector(LinRange(0, 20, Int(20/stepSizes[1])))
-t2 = Vector(LinRange(0, 20, Int(20/stepSizes[2])))
-t3 = Vector(LinRange(0, 20, Int(20/stepSizes[3])))
-t4 = Vector(LinRange(0, 20, Int(20/stepSizes[4])))
-t5 = Vector(LinRange(0, 20, Int(20/stepSizes[5])))
+stepSizes = [0.005, 0.05, 0.01, 0.005, 0.001]
+t1 = Vector(LinRange(0, 10, Int(10/stepSizes[1])))
+# t2 = Vector(LinRange(0, 20, Int(20/stepSizes[2])))
+# t3 = Vector(LinRange(0, 20, Int(20/stepSizes[3])))
+# t4 = Vector(LinRange(0, 20, Int(20/stepSizes[4])))
+# t5 = Vector(LinRange(0, 20, Int(20/stepSizes[5])))
 e1, s1 = runMD(stepSizes[1], 2, 3)
-e2, s2 = runMD(stepSizes[2], 2, 3)
-e3, s3 = runMD(stepSizes[3], 2, 3)
+# e2, s2 = runMD(stepSizes[2], 2, 3)
+# e3, s3 = runMD(stepSizes[3], 2, 3)
 # e4, s4 = runMD(stepSizes[4], 2, 3)
 # e5, s5 = runMD(stepSizes[5], 2, 3)
 plot(t1, e1.obs.spinEnergySeries, label=string(stepSizes[1]), title="time evolution energy")
-plot!(t2, e2.obs.spinEnergySeries, label=string(stepSizes[2]))
-plot!(t3, e3.obs.spinEnergySeries, label=string(stepSizes[3]))
+# plot!(t2, e2.obs.spinEnergySeries, label=string(stepSizes[2]))
+# plot!(t3, e3.obs.spinEnergySeries, label=string(stepSizes[3]))
 # plot!(t4, e4.obs.spinEnergySeries, label=string(stepSizes[4]))
 # plot!(t5, e5.obs.spinEnergySeries, label=string(stepSizes[5]))
 xlabel!("time")

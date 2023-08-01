@@ -62,7 +62,7 @@ function makeGenerators(dim::Int)
         # calculate norm
         norm = sx^2 + sy^2 + sz^2 + s4^2 + s5^2 + s6^2 + s7^2 + s8^2
      
-        generators = [sx, sy, sz, s4, s5, s6, s7, s8]
+        generators = [sy, sz, s4, s5, s6, s7, s8, sx]
     end
 
     return generators
@@ -134,7 +134,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     Lsize=(24,24)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
-    spring = [1.0,1.0, 1.0]
+    spring = [0.0,0.0, 0.0]
     # mat = [1.0; 0.0; 0.0 ;;]
     mat =[0.0 0.0 0.0
         0.0  0.0 0.0
@@ -208,6 +208,8 @@ function runMD(tstep, dim, phdim)
     setPhononDamp!(evs,[0.0,0.0, 0.0],phdim)
     setStructureFactors!(evs, gens, dim)
 
+    print(dot(gens.genReps[4,1], evs.lattice.expVals[:,32])^2 + dot(gens.genReps[4,2], evs.lattice.expVals[:,32])^2 + dot(gens.genReps[4,3], evs.lattice.expVals[:,32])^2)
+
     function drive(t)
         x=0.000*cos(t)
         return (x)
@@ -231,6 +233,14 @@ function runMD(tstep, dim, phdim)
     x = zeros(n)
     y = zeros(n)
     z = zeros(n)
+    a = zeros(n)
+    b = zeros(n)
+    c = zeros(n)
+    d = zeros(n)
+    f = zeros(n)
+    Sx = zeros(n)
+    Sy = zeros(n)
+    Sz = zeros(n)
     x2 = zeros(n)
     y2 = zeros(n)
     z2 = zeros(n)
@@ -248,40 +258,47 @@ function runMD(tstep, dim, phdim)
 
     # print(evs.lattice.phonons[1,1])
     # print(evs.lattice.expVals)
-    spinEnerg, phEnerg, totalEnerg = getEvEnergy(evs,gens)
-    print("Initial MD energy: ", spinEnerg, "\n")
-
+    spinEnerg, phEnerg, totalEnerg = getEvEnergy(evs,gens,evs.latticePrev)
+    print("Initial MD spin energy: ", spinEnerg, "\n")
 
     for i in 1:n
         for j in 1:length(evs.lattice)
-            x[i] += evs.lattice.expVals[1,j]
+            x[i] += evs.lattice.expVals[1,j] 
             y[i] += evs.lattice.expVals[2,j]
             z[i] += evs.lattice.expVals[3,j]
+            # s[i] += norm(evs.lattice.expVals[:,j][1:8])
         end
         x[i] = x[i]/(length(evs.lattice))
         y[i] = y[i]/(length(evs.lattice))
         z[i] = z[i]/(length(evs.lattice))
+        # s[i] = s[i]/(length(evs.lattice))
+
+        Sx[i] = dot(gens.genReps[1,1], evs.lattice.expVals[:,32])
+        Sy[i] = dot(gens.genReps[2,2], evs.lattice.expVals[:,32])
+        Sz[i] = dot(gens.genReps[3,3], evs.lattice.expVals[:,32])
+
 
         # x[i] += evs.lattice.expVals[1,32]
         # y[i] += evs.lattice.expVals[2,32]
-        # z[i] += evs.lattice.expVals[3,32]
+        # z[i] += evs.lattice.expVals[3,32]Vector
 
         # x2[i] += evs.lattice.expVals[1,100]
         # y2[i] += evs.lattice.expVals[2,100]
         # z2[i] += evs.lattice.expVals[3,100]
 
-        s[i] = sqrt(x[i]^2 + y[i]^2 + z[i]^2)
+        s[i] = sqrt(Sx[i]^2 + Sy[i]^2 + Sz[i]^2)
 
         evolve!(evs, gens, 3, 3, T, 1)
-        spinEnergy, phEnergy, totalEnergy = getEvEnergy(evs,gens)
+        spinEnergy, phEnergy, totalEnergy = getEvEnergy(evs,gens,evs.latticePrev)
         measureEvObservables!(evs, spinEnergy, phEnergy, totalEnergy)
+
 
         # phx[i] = evs.lattice.phonons[1,1]
         # phy[i] = evs.lattice.phonons[2,1]
         # phz[i] = evs.lattice.phonons[3,1]
     end
 
-    return evs, s
+    return evs, Sx, Sy, Sz, s
 
 end
 
@@ -296,37 +313,47 @@ end
 # plot([x,y,z], title="spin components")
 
 # print(evs.obs.energySeries)
+# m,gens=runMC(0.1)
 
-stepSizes = [0.02, 0.05, 0.01, 0.005, 0.001]
+stepSizes = [0.005, 0.05, 0.01, 0.005, 0.001]
 t1 = Vector(LinRange(0, 20, Int(20/stepSizes[1])))
 # t2 = Vector(LinRange(0, 20, Int(20/stepSizes[2])))
 # t3 = Vector(LinRange(0, 20, Int(20/stepSizes[3])))
 # t4 = Vector(LinRange(0, 20, Int(20/stepSizes[4])))
 # t5 = Vector(LinRange(0, 20, Int(20/stepSizes[5])))
-e1, s1 = runMD(stepSizes[1], 3, 3)
+e1, x, y, z, s1 = runMD(stepSizes[1], 3, 3)
 # e2, s2 = runMD(stepSizes[2], 2, 3)
 # e3, s3 = runMD(stepSizes[3], 2, 3)
 # e4, s4 = runMD(stepSizes[4], 2, 3)
 # e5, s5 = runMD(stepSizes[5], 2, 3)
-plot(t1, e1.obs.spinEnergySeries, label=string(stepSizes[1]), title="time evolution energy")
+# plot(t1, e1.obs.spinEnergySeries, label=string(stepSizes[1]), title="time evolution energy")
 # plot!(t2, e2.obs.spinEnergySeries, label=string(stepSizes[2]))
 # plot!(t3, e3.obs.spinEnergySeries, label=string(stepSizes[3]))
 # plot!(t4, e4.obs.spinEnergySeries, label=string(stepSizes[4]))
 # plot!(t5, e5.obs.spinEnergySeries, label=string(stepSizes[5]))
-xlabel!("time")
-ylabel!("energy")
+# xlabel!("time")
+# ylabel!("energy")
 
 
-# plot(t1, s1, label=string(stepSizes[1]), title="time evolution magnetization")
+plot(t1, s1, label=string(stepSizes[1]), title="time evolution magnetization")
 # plot!(t2, s2, label=string(stepSizes[2]))
 # plot!(t3, s3, label=string(stepSizes[3]))
 # plot!(t4, s4, label=string(stepSizes[4]))
 # plot!(t5, s5, label=string(stepSizes[5]))
-# xlabel!("time")
-# ylabel!("magnetization")
+xlabel!("time")
+ylabel!("magnetization")
 # plot(t2, runMD(stepSizes[2], 2, 3))
 # p3 = plot(runMD(stepSizes[3], 2, 3))
 # p4 = plot(runMD(stepSizes[4], 2, 3))
+
+# plot(t1, s1, label="S", title="time evolution magnetization")
+# plot(t1, x, label="Sx", title="time evolution magnetization")
+# plot!(t1, y, label="Sy")
+# plot!(t1, z, label="Sz")
+# plot!(t4, s4, label=string(stepSizes[4]))
+# plot!(t5, s5, label=string(stepSizes[5]))
+# xlabel!("time")
+# ylabel!("spin component")
 
 
 # title = string("time evolution energy")

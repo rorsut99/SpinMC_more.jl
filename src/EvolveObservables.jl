@@ -26,24 +26,24 @@ function initEvolveObservables()
     return(evsObs)
 end
 
-function getEvEnergy(evs,gens::Generators)
+function getEvEnergy(evs,gens::Generators, lattice)
     spinEnergy = 0.0
     phEnergy = 0.0
     energy = 0.0
     d=size(gens.spinOperators[1])[1]
     Id=Matrix((1.0+0im)I,d,d)
-    for site in 1:length(evs.latticePrev)
+    for site in 1:length(lattice)
         # get vector of exp values for site
         s0 = getExpValSpin(evs, site)
-        p0 = getPhonon(evs.latticePrev, site)
+        p0 = getPhonon(lattice, site)
         # tempS0=copy(s0)
         
         # push!(tempS0,calcInnerProd(getSpin(lattice,site),Id,getSpin(lattice,site)))
     
 
         #two-spin interactions
-        interactionSites = getInteractionSites(evs.latticePrev, site)
-        interactionMatrices = getInteractionMatrices(evs.latticePrev, site)
+        interactionSites = getInteractionSites(lattice, site)
+        interactionMatrices = getInteractionMatrices(lattice, site)
         for i in 1:length(interactionSites)
             # get vector of exp values for interaction site
             s1 = getExpValSpin(evs, interactionSites[i])
@@ -54,8 +54,8 @@ function getEvEnergy(evs,gens::Generators)
             end
         end
 
-        phEnergy += phononPotentialEnergy(evs.latticePrev, p0)
-        energy += spinPhononCoupling(evs.latticePrev, s0, p0)
+        phEnergy += phononPotentialEnergy(lattice, p0)
+        energy += spinPhononCoupling(lattice, s0, p0)
         phEnergy += sum((evs.phononMomentaPrev[:,site] .^ 2) ./ (2 .* evs.phononMass))
         # energy += (evs.phononMomentaPrev[2,site]^2)/(2*evs.phononMass[2])
 

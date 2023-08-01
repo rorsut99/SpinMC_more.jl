@@ -1,5 +1,5 @@
-include("UnitCell.jl")
 include("Generators.jl")
+include("UnitCell.jl")
 include("InteractionMatrix.jl")
 include("Lattice.jl")
 include("Spin.jl")
@@ -8,7 +8,7 @@ include("MonteCarlo.jl")
 include("Helper.jl")
 include("IO.jl")
 include("Phonon.jl")
-include("evolve.jl")
+# include("evolve.jl")
 
 using LinearAlgebra
 using Suppressor
@@ -33,35 +33,38 @@ function makeGenerators(dim::Int)
 
     elseif (dim==3)
         # Gell-Mann matrices
-        sx=[0+0.0im 1.0+0im  0
-            1.0+0im 0+0im 0
+        sx=[1+0.0im 0.0+0im  0
+            0.0+0im 0+0im 0
             0 0 0]
-        sy=[0 -1.0im 0
-            1.0im 0 0
+        sy=[0 1.0 0
+            0.0im 0 0
             0 0 0 ]
-        sz=[1.0+0im 0 0
-            0 -1.0+0im 0
+        sz=[0.0+0im 0 1
+            0 0.0+0im 0
             0 0 0  ]
-        s4=[0+0im 0 1.0
-            0 0 0
-            1.0 0 0]
-        s5=[0 0 -1.0im
-            0 0 0
-            1.0im 0 0]
+        s4=[0+0im 0 0.0
+            1 0 0
+            0.0 0 0]
+        s5=[0 0 0.0im
+            0 1 0
+            0.0im 0 0]
         s6=[0+0.0im 0 0
             0 0 1.0
-            0 1.0 0]
+            0 0.0 0]
         s7=[0 0 0
-            0 0 -1.0im
-            0 1.0im 0]
-        s8=[1.0+0im 0 0
-            0 1.0 0
-            0 0 -2.0]/sqrt(3)
+            0 0 0.0im
+            1 0.0im 0]
+        s8=[0.0+0im 0 0
+            0 0.0 0
+            0 1 0.0]
+        s9=[0.0+0im 0 0
+            0 0.0 0
+            0 0 1.0]
 
         # calculate norm
         norm = sx^2 + sy^2 + sz^2 + s4^2 + s5^2 + s6^2 + s7^2 + s8^2
      
-        generators = [sx, sy, sz, s4, s5, s6, s7, s8]
+        generators = [sx, sy, sz, s4, s5, s6, s7, s8, s9]
     end
 
     return generators
@@ -94,39 +97,40 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     0 -1 0
     0 0 0]
 
-    addSpinOperator!(gens,Sy,3)
-    addSpinOperator!(gens,Sz,3)
-    addSpinOperator!(gens,Sx,3)
+    print(length(gens.spinOperators))
+    addSpinOperator!(gens,Sx)
+    addSpinOperator!(gens,Sy)
+    addSpinOperator!(gens,Sz)
  
 
     generators = makeGenerators(dim)
 
     # push generators to lattice struct
     for gen in generators
-        addGenerator!(gens,gen,dim)
+        addGenerator!(gens,gen)
     end
-    setGenReps!(gens,3)
+    setGenReps!(gens)
 
 
     uc = UnitCell(a1,a2)
-    FMint = Matrix(-1.50I,dim,dim)      # Heisenberg interaction
+    FMint = Matrix(-1.0I,dim,dim)      # Heisenberg interaction
     AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim,dim)
     addBasisSite!(uc,(0.0,0.0),dim)
     # nearest neighbour interaction
     # added parameter to take in the order of the term in the hamiltonian
     # bilinear interaction
-    addInteraction!(uc,gens,1,1,AFMint,1,dim,(1,0))
-    addInteraction!(uc,gens,1,1,AFMint,1,dim,(0,1))
-    addInteraction!(uc,gens,1,1,AFMint,1,dim,(1,-1))
+    addInteraction!(uc,gens,1,1,FMint,1,(1,0))
+    addInteraction!(uc,gens,1,1,FMint,1,(0,1))
+    addInteraction!(uc,gens,1,1,FMint,1,(1,-1))
 
-    B=[1.0,0,0]
-    setField!(uc,gens,1,B,dim)
+    B=[0.0,0,0]
+    setField!(uc,gens,1,B)
 
     # # biquadratic interaction
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(1,0))
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(0,1))
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(1,-1))
+    # addInteraction!(uc,gens,1,1,FMint,2,dim,(1,0))
+    # addInteraction!(uc,gens,1,1,FMint,2,dim,(0,1))
+    # addInteraction!(uc,gens,1,1,FMint,2,dim,(1,-1))
 
     
 
@@ -135,14 +139,14 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     
 
-    spring = [1.0,1.0]
+    spring = [0.0,0.0]
     # mat = [1.0; 0.0; 0.0 ;;]
-    mat =[1.0 0.0
+    mat =[0.0 0.0
         0.0  0.0
-        0.0  1.0]
+        0.0  0.0]
 
     addSpringConstant!(lattice, spring, phdim)
-    addPhononInteraction!(lattice,1, gens, mat, dim, phdim)
+    addPhononInteraction!(lattice,1, gens, mat)
 
     
 
@@ -173,8 +177,8 @@ function runMC(T)
     # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
     # set sweeps
-    thermSweeps=10
-    sampleSweeps=10
+    thermSweeps=5000
+    sampleSweeps=5000
 
     # temp=ones(length(T))
     # tmin=0.1
@@ -199,7 +203,7 @@ function runMC(T)
     # print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
 
     # # print energy
-    # print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
+    print("Final energy: ", e, "\nFinal energy squared: ", e2, "\n")
 
     # print(m.lattice.spins)
     return (m, gens)
@@ -225,7 +229,7 @@ end
 # Tvals = LinRange(0.1, 0.7, Tpoints)
 # heat = zeros(Tpoints)
 
-m,gens=runMC(0.01)
+m,gens=runMC(0.001)
 
 
 # for i in 1:length(Tvals)

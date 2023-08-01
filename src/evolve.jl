@@ -1,5 +1,6 @@
 using DifferentialEquations
 using Plots
+using SciPyDiffEq
 
 #Constants and setup
 
@@ -15,6 +16,7 @@ mutable struct Evolution
     phononDrive::Vector{Function}
     timeStep::Float64
     tspan::Tuple
+    threshold::Float64
 
     obs::EvolveObservables
 
@@ -229,7 +231,7 @@ function evolve_phonon(gens,evs,site,dim,phdim)
 
     end
 
-    alg = Tsit5()
+    alg = SciPyDiffEq.RK45()
     phononProb = ODEProblem(update,x0,evs.tspan)
     sol = solve(phononProb, alg)
 
@@ -241,7 +243,7 @@ function addPhononDrive!(evs,driveFunctions,phd)
     evs.phononDrive = driveFunctions
 end
 
-function updateTimeSpan!(evs,stepSize, iteration)
+function updateTimeSpan!(evs,stepSize)
     evs.tspan = (evs.tspan[2], evs.tspan[2]+(stepSize))
 end
 
@@ -249,26 +251,40 @@ function setTimeStep!(evs)
     evs.timeStep=evs.tspan[2]-evs.tspan[1]
 end
 
+function updateTimeStep!(evs, tstep)
+    evs.timeStep = tstep
+end
+
+function setThreshold!(evs, threshold)
+    evs.threshold = threshold
+end
+
+
+# function checkStability(evs)
+#     spinEnergy, phEnergy, totalEnergyPrev = getEvEnergy(evs,gens,evs.latticePrev)
+#     spinEnergy, phEnergy, totalEnergy = getEvEnergy(evs,gens,evs.lattice)
+#     diff = totalEnergy - totalEnergyPrev
+# end
+
 
 
 
 function evolve!(evs,gens,dim,phdim,T,numSteps)
 
-    for i in 1:numSteps
-        for site in 1:length(evs.lattice)
-            spin=evolve_spin(gens,evs,site,dim)
-            # phonon=evolve_phonon(gens,evs,site,dim,phdim)
-            setExpValSpin!(evs,site,spin)
-            # setPhonon!(evs.lattice,site,phonon[1:phdim])
-            # setPhononMomentum!(evs,site,phonon[phdim+1:end])
+    for site in 1:length(evs.lattice)
+        spin=evolve_spin(gens,evs,site,dim)
+        # phonon=evolve_phonon(gens,evs,site,dim,phdim)
+        setExpValSpin!(evs,site,spin)
+        # setPhonon!(evs.lattice,site,phonon[1:phdim])
+        # setPhononMomentum!(evs,site,phonon[phdim+1:end])
             
-        end
-        # evs.phononMomentaPrev = deepcopy(evs.phononMomenta)
-        evs.latticePrev = deepcopy(evs.lattice)
-        updateTimeSpan!(evs,evs.timeStep,i)
-        # print(i, "\n")
-
     end
+    # check stability, add if statment
+    # evs.phononMomentaPrev = deepcopy(evs.phononMomenta)
+    evs.latticePrev = deepcopy(evs.lattice)
+    updateTimeSpan!(evs,evs.timeStep)
+    # print(i, "\n")
+
 
 
 

@@ -18,14 +18,13 @@ mutable struct Lattice{D,N,dim,phdim}
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
     interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
 
-
     expVals::Matrix{Float64}
     Lattice(D,N,dim,phdim) = new{D,N,dim,phdim}()
 end
 
 
 # Added dim variable to define dimension of spin vector
-function Lattice(uc::UnitCell{D}, L::NTuple{D,Int},dim::Int, phdim::Int) where D
+function Lattice(uc::UnitCell{D}, L::NTuple{D,Int}, dim::Int, phdim::Int) where D
     #parse interactions
     ##For every basis site b, generate list of sites which b interacts with and store the corresponding interaction sites and matrices. 
     ##Interaction sites are specified by the target site's basis id, b_target, and the offset in units of primitive lattice vectors. 
@@ -157,7 +156,7 @@ end
 
 
 
-function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},order::Int64,gens::Generators,M::Matrix{Float64},d::Int64,phd::Int64) where {D,N,dim,phdim}
+function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},order::Int64,gens::Generators,M::Matrix{Float64}) where {D,N,dim,phdim}
     # size(M) == (d^2-1,phd) || error(string("Coupling matrix must be of size ",d^2-1,"x",phd,"."))
     coupling = couplingMatrix(gens,order, M, dim, phdim)
 
