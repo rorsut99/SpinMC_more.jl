@@ -18,7 +18,7 @@ mutable struct Lattice{D,N,dim,phdim}
     interactionOnsite::Vector{InteractionMatrix} #list of length N_sites, for every site contains the local onsite interaction matrix
     interactionField::Vector{Any} #list of length N_sites, for every site contains the local field
 
-    expVals::Matrix{Float64}
+    expVals::Matrix{ComplexF64}
     Lattice(D,N,dim,phdim) = new{D,N,dim,phdim}()
 end
 

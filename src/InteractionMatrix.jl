@@ -2,7 +2,7 @@
 
 struct InteractionMatrix
 
-    mat::Matrix{Any}
+    mat::Matrix{Float64}
 end
 
 function InteractionMatrix(dim::Int)

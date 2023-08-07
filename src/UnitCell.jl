@@ -30,7 +30,7 @@ function getInteractionMatrix(M,gens,order)
     end
     if order==2
         reps=transpose(gens.genReps)
-        res=zeros(ComplexF64,dim^2,dim^2)
+        res=zeros(ComplexF64,gens.dim^2,gens.dim^2)
         newM=zeros(ComplexF64,3,3)
         for i in 1:3
             for j in 1:3

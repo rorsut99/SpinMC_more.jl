@@ -1,8 +1,11 @@
+
 using Random
 using LinearAlgebra
 using Distributions
 
-
+"""
+returns dim phonon coordinates between -Qmax and Qmax
+"""
 function uniformDist(dim,Qmax)
     vec=rand(Uniform(-Qmax,Qmax), dim)
     return (vec)
@@ -24,6 +27,9 @@ function setPhonon!(lattice::Lattice{D,N,dim,phdim}, site::Int, newState::Vector
     lattice.phonons[:,site] = newState
 end
 
+"""
+decomposes the spin-phonon coupling matrix from spin-space to generator-space
+"""
 function couplingMatrix(gens,order, M, dim, phdim)
 
     if order==1

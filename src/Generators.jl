@@ -76,7 +76,7 @@ function setGenReps!(gens::Generators)
         end
     end
 
-    # generator reps of frist order in spin operators (Sx, Sy, Sz)
+    # generator reps of first order in spin operators (Sx, Sy, Sz)
     for k in 1:3
         mat=gens.spinOperators[k]
         vec=decomposeMat(gens,mat)

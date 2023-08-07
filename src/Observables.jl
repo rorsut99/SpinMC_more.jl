@@ -56,5 +56,5 @@ function performMeasurements!(observables::Observables, lattice::T, energy::Floa
     #push!(observables.tzlist, lattice.spins[3,:])
 
     #measure spin correlations
-    push!(observables.correlation, getCorrelation(lattice, gens))
+    # push!(observables.correlation, getCorrelation(lattice, gens))
 end
