@@ -66,7 +66,7 @@ function getEvEnergy(evs,gens::Generators, lattice)
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
 
         #field interaction
-        # spinEnergy += dot(s0, getInteractionField(evs.lattice, site))
+        spinEnergy += dot(s0, getInteractionField(evs.lattice, site))
     end
 
     energy += spinEnergy

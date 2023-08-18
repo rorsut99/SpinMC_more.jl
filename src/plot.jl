@@ -58,9 +58,8 @@ function plotDat()
     print(peakPos)
 
     # plot energy vs sweeps
-    title = string("SU(", dim, ") FM heat capacity")
-    plot(Tvals, heat,yerr=dheat, title=title)
-    xlabel!("T")
+    plot(Tvals, heat,yerr=dheat,label="C(T)")
+    xlabel!("T (J)")
     ylabel!("C")
 end 
 

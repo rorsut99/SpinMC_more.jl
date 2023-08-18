@@ -1,6 +1,6 @@
 using DifferentialEquations
 using Plots
-using SciPyDiffEq
+
 
 #Constants and setup
 
@@ -26,7 +26,7 @@ end
 
 function initEv(dim,lattice,gens,timeStep,phdim)
     evs = Evolution()
-    finalState!(lattice,gens,dim) # save the final MC state to lattice.expVals
+    finalState!(lattice,gens) # save the final MC state to lattice.expVals
     evs.structureFactors = Matrix{Vector{ComplexF64}}(undef,dim^2,dim^2)
     evs.lattice = deepcopy(lattice)
     evs.latticePrev = deepcopy(lattice)
@@ -51,7 +51,7 @@ function initEv(dim,lattice,gens,timeStep,phdim)
 
 
 
-
+    # FM initialization
     # expVals=zeros(dim^2,length(lattice))
     # for site in 1:length(lattice)
     #     if site==1
@@ -69,6 +69,40 @@ function initEv(dim,lattice,gens,timeStep,phdim)
     # evs.latticePrev.expVals=deepcopy(expVals)
 
     # lattice.expVals=deepcopy(expVals)
+
+
+    #AFM initialization
+    # expVals=zeros(dim^2,length(lattice))
+    # for site in 1:length(lattice)
+    #     if site==1
+    #         vec=[0.0,0.2,-1.0]
+    #         vec/=norm(vec)
+    #         push!(vec,1.0)
+    #         expVals[:,site]=vec
+    #     else
+    #         row=floor((site-1)/lattice.size[1])
+    #         vec=[0.0,0,1.0,1.0]
+    #         if site%2==0
+    #             sign=-1
+    #         else
+    #             sign=1
+    #         end
+
+    #         if row%2==0
+    #             sign*=1
+    #         else
+    #             sign*=-1
+    #         end
+
+    #         expVals[:,site]=sign*vec
+    #     end
+    # end
+
+    # evs.lattice.expVals=deepcopy(expVals)
+    # evs.latticePrev.expVals=deepcopy(expVals)
+
+    # lattice.expVals=deepcopy(expVals)
+
 
 
         
@@ -130,7 +164,7 @@ function setStructureFactors!(evs,gens,dim)
     for i in 1:dim^2
         for j in 1:dim^2
             res=mats[i]*mats[j]-mats[j]*mats[i]
-            vec=decomposeMat(gens,res,dim)
+            vec=decomposeMat(gens,res)
             evs.structureFactors[i,j]=-1im*vec
 
         end
@@ -138,7 +172,7 @@ function setStructureFactors!(evs,gens,dim)
 end
 
 
-function evolve_spin(gens,evs,site,dim)
+function evolve_spin(gens,evs,site,dim,tol)
     Id=Matrix((1.0+0im)I,dim,dim)
 
     s0=getExpValSpin(evs,site)
@@ -148,13 +182,7 @@ function evolve_spin(gens,evs,site,dim)
     interactionSites = getInteractionSites(evs.latticePrev, site)
     interactionMatrices = getInteractionMatrices(evs.latticePrev, site)
     interactionField = getInteractionField(evs.latticePrev, site)
-    output=zeros(dim^2)
-    for j in 1:length(interactionSites)
-        Jex=interactionMatrices[j].mat
-        s1 = getExpValSpin(evs,interactionSites[j])
-
-        output+=Jex*s1
-    end
+    
 
     # if site==1
     #     print("output: ", output,"\n")
@@ -169,6 +197,7 @@ function evolve_spin(gens,evs,site,dim)
 
 
     function update(xdot,x,p,t)
+        output=zeros(dim^2)
         mat=zeros(dim^2,dim^2)
         for i in 1:dim^2
             for j in 1:dim^2
@@ -176,21 +205,95 @@ function evolve_spin(gens,evs,site,dim)
             end
         end
 
+        for k in 1:length(interactionSites)
+            Jex=interactionMatrices[k].mat
+            s1 = getExpValSpin(evs,interactionSites[k])
+            output += Jex*mat*s1 
+        end
+
         coupling = evs.lattice.phononCoupling
         vec = coupling*p0
-
-        xdot[:] = mat*output + mat*vec + mat*interactionField
+        xdot[:] = output + mat*vec + mat*interactionField
     end
 
     alg = Tsit5()
     spin_prob = ODEProblem(update,s0,evs.tspan)
-    sol = solve(spin_prob, alg)
+    sol = solve(spin_prob, alg,abstol=tol,reltol=tol)
 
 
 
     return (last(sol.u))
 
 end
+
+
+# function evolve_spin(gens,evs,site,dim,tol)
+#     Id=Matrix((1.0+0im)I,dim,dim)
+
+#     s0=getExpValSpin(evs,site)
+#     p0 = getPhonon(evs.latticePrev, site)
+    
+
+#     interactionSites = getInteractionSites(evs.latticePrev, site)
+#     interactionMatrices = getInteractionMatrices(evs.latticePrev, site)
+#     interactionField = getInteractionField(evs.latticePrev, site)
+    
+
+#     # if site==1
+#     #     print("output: ", output,"\n")
+#     #     mat=zeros(dim^2,dim^2)
+#     #     for i in 1:dim^2
+#     #         for j in 1:dim^2
+#     #             mat[i,j]=dot(evs.structureFactors[i,j], s0)
+#     #         end
+#     #     end
+#     #     print("mat*output: ", mat*output, "\n")
+#     # end
+
+
+#     function update(xdot,x,p,t)
+#         for g in 1:dim^2
+#             output = 0.0
+
+#             for i in 1:length(interactionSites)
+#                 Jex = interactionMatrices[i].mat
+#                 nn = getExpValSpin(evs,interactionSites[i])
+
+#                 for j in 1:dim^2
+#                     for k in 1:dim^2
+#                         J = Jex[j,k]
+
+#                         for l in 1:dim^2
+#                             epsilon = evs.structureFactors[g,j][l]
+#                             output += J*epsilon*x[l]*nn[k]
+#                         end
+
+#                     end
+#                 end
+
+
+#             end
+
+#             xdot[g] = output
+
+#         end
+
+
+#     end
+
+#     alg = Tsit5()
+#     spin_prob = ODEProblem(update,s0,evs.tspan)
+#     sol = solve(spin_prob, alg,abstol=tol,reltol=tol)
+
+
+
+#     return (last(sol.u))
+
+# end
+
+
+
+
 
 function evolve_phonon(gens,evs,site,dim,phdim)
     x0=getPhonon(evs.latticePrev,site)
@@ -231,7 +334,7 @@ function evolve_phonon(gens,evs,site,dim,phdim)
 
     end
 
-    alg = SciPyDiffEq.RK45()
+    alg = Vern7()
     phononProb = ODEProblem(update,x0,evs.tspan)
     sol = solve(phononProb, alg)
 
@@ -269,10 +372,10 @@ end
 
 
 
-function evolve!(evs,gens,dim,phdim,T,numSteps)
+function evolve!(evs,gens,dim,phdim,T,numSteps,tol)
 
     for site in 1:length(evs.lattice)
-        spin=evolve_spin(gens,evs,site,dim)
+        spin=evolve_spin(gens,evs,site,dim,tol)
         # phonon=evolve_phonon(gens,evs,site,dim,phdim)
         setExpValSpin!(evs,site,spin)
         # setPhonon!(evs.lattice,site,phonon[1:phdim])

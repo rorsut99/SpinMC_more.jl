@@ -59,10 +59,12 @@ function makeGenerators(dim::Int)
             0 1.0 0
             0 0 -2.0]/sqrt(3)
 
+        s9 = Matrix(1.0I, 3, 3)
+
         # calculate norm
         norm = sx^2 + sy^2 + sz^2 + s4^2 + s5^2 + s6^2 + s7^2 + s8^2
      
-        generators = [sy, sz, s4, s5, s6, s7, s8, sx]
+        generators = [sx,sy, sz, s4, s5, s6, s7, s8, s9]
     end
 
     return generators
@@ -95,18 +97,18 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     0 -1 0
     0 0 0]
 
-    addSpinOperator!(gens,Sy,dim)
-    addSpinOperator!(gens,Sz,dim)
-    addSpinOperator!(gens,Sx,dim)
+    addSpinOperator!(gens,Sx)
+    addSpinOperator!(gens,Sy)
+    addSpinOperator!(gens,Sz)
  
 
     generators = makeGenerators(dim)
 
     # push generators to lattice struct
     for gen in generators
-        addGenerator!(gens,gen,dim)
+        addGenerator!(gens,gen)
     end
-    setGenReps!(gens,dim)
+    setGenReps!(gens)
 
 
     uc = UnitCell(a1,a2)
@@ -123,12 +125,12 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     # addInteraction!(uc,gens,1,1,AFMint,1,dim,(1,-1))
 
     B=[0.0,0,0]
-    setField!(uc,gens,1,B,dim)
+    setField!(uc,gens,1,B)
 
     # # biquadratic interaction
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(1,0))
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(0,1))
-    addInteraction!(uc,gens,1,1,FMint,2,dim,(1,-1))
+    addInteraction!(uc,gens,1,1,FMint,2,(1,0))
+    addInteraction!(uc,gens,1,1,FMint,2,(0,1))
+    addInteraction!(uc,gens,1,1,FMint,2,(1,-1))
 
 
     Lsize=(24,24)       # size of lattice
@@ -146,7 +148,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
         0.0  0.0 0.0]
 
     addSpringConstant!(lattice, spring, phdim)
-    addPhononInteraction!(lattice,1, gens, mat, dim, phdim)
+    addPhononInteraction!(lattice,1, gens, mat)
 
     return (lattice,gens)
 end
@@ -288,7 +290,7 @@ function runMD(tstep, dim, phdim)
 
         s[i] = sqrt(Sx[i]^2 + Sy[i]^2 + Sz[i]^2)
 
-        evolve!(evs, gens, 3, 3, T, 1)
+        evolve!(evs, gens, 3, 3, T, 1, 1e-8)
         spinEnergy, phEnergy, totalEnergy = getEvEnergy(evs,gens,evs.latticePrev)
         measureEvObservables!(evs, spinEnergy, phEnergy, totalEnergy)
 

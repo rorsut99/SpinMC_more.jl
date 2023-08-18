@@ -28,7 +28,7 @@ function makeGenerators(dim::Int)
         s9 = Matrix(1.0I, 2, 2)
 
         # calculate norm
-        norm = sx^2 + sy^2 + sz^2
+        norm = sx^2 + sy^2 + sz^2 + s9^2
 
         generators = [sx, sy, sz, s9]
 
@@ -78,12 +78,12 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     gens=initGen(dim)
 
-    Sx=[0+0.0im 1.0+0im 
-    1.0+0im 0+0im]
-    Sy=[0 -1.0im
-    1.0im 0]
-    Sz=[1.0+0im 0
-    0 -1.0+0im]
+    # Sx=[0+0.0im 1.0+0im 
+    # 1.0+0im 0+0im]
+    # Sy=[0 -1.0im
+    # 1.0im 0]
+    # Sz=[1.0+0im 0
+    # 0 -1.0+0im]
 
     # Sx=[0 0 0.0+0im
     # 0 0 -1im
@@ -97,17 +97,17 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     # 1im 0 0
     # 0 0 0]
 
-    # Sx=[0 0 1.0+0im
-    # 0 0 1
-    # 1 1 0]/sqrt(2)
+    Sx=[0 0 1.0+0im
+    0 0 1
+    1 1 0]/sqrt(2)
 
-    # Sy=(-1im/sqrt(2))*[0 0 1.0+0im
-    # 0 0 -1
-    # -1 1 0]
+    Sy=(-1im/sqrt(2))*[0 0 1.0+0im
+    0 0 -1
+    -1 1 0]
 
-    # Sz=[1.0+0im 0 0
-    # 0 -1 0
-    # 0 0 0]
+    Sz=[1.0+0im 0 0
+    0 -1 0
+    0 0 0]
 
     addSpinOperator!(gens,Sx)
     addSpinOperator!(gens,Sy)
@@ -125,26 +125,28 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     uc = UnitCell(a1,a2)
     FMint = Matrix(-1.0I,3,3)      # Heisenberg interaction
-    AFMint = Matrix(1.0I,dim,dim)      # Heisenberg interaction
+    AFMint = Matrix(1.0I,3,3)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim,dim)
     addBasisSite!(uc,(0.0,0.0),dim)
     # nearest neighbour interaction
     # added parameter to take in the order of the term in the hamiltonian
     # bilinear interaction
-    J1 = -1
+    J1 = 1
+    addInteraction!(uc,gens,1,1,J1*AFMint,1,(1,0))
+    addInteraction!(uc,gens,1,1,J1*AFMint,1,(0,1))
+    addInteraction!(uc,gens,1,1,J1*AFMint,1,(1,-1))
 
     B=[0.0,0,0]
     setField!(uc,gens,1,B)
 
     # # biquadratic interaction
-    # addInteraction!(uc,gens,1,1,1.5*FMint,2,(1,0))
-    # addInteraction!(uc,gens,1,1,1.5*FMint,2,(0,1))
-    # addInteraction!(uc,gens,1,1,1.5*FMint,2,(1,-1))
-    J2 = 0
+    J2 = 1.5
+    addInteraction!(uc,gens,1,1,J2*FMint,2,(1,0))
+    addInteraction!(uc,gens,1,1,J2*FMint,2,(0,1))
+    addInteraction!(uc,gens,1,1,J2*FMint,2,(1,-1))
+ 
 
-    addInteraction!(uc,gens,1,1,FMint,1,(1,0))
-    addInteraction!(uc,gens,1,1,FMint,1,(0,1))
-    addInteraction!(uc,gens,1,1,FMint,1,(1,-1))
+
 
     
 
@@ -162,16 +164,18 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     addSpringConstant!(lattice, spring, phdim)
     addPhononInteraction!(lattice,1, gens, mat)
 
-    # touch("mc_plots/output_BBQTriLattice_J1-1_J2-15.txt")
-    file = open("mc_plots/output_BBQTriLattice_SU2.txt", "w")
 
-    write(file, string("\n\nResults for MC simulation on SU(", dim, ") BBQ Spin-1 Triangular Lattice\n\n"))
-    write(file, string("MODEL PARAMETERS--------------------------------\nlattice size: ", Lsize, "\n"))
-    write(file, string("Bilinear J1: ", J1, "\n"))
-    write(file, string("Biquadratic J2: ", J2, "\n"))
-    write(file, string("Spin Operators: \nSx: ", Sx, "\nSy: ", Sy, "\nSz: ", Sz, "\n"))
-    write(file, string("Number of phonons: ", phdim, "\n"))
-    write(file, string("Spring constants: ", spring, "\nCoupling: ", mat, "\n\n"))
+    
+    # # touch("mc_plots/output_BBQTriLattice_J1-1_J2-15.txt")
+    # file = open("mc_plots/output_BBQTriLattice_SU2.txt", "w")
+
+    # write(file, string("\n\nResults for MC simulation on SU(", dim, ") BBQ Spin-1 Triangular Lattice\n\n"))
+    # write(file, string("MODEL PARAMETERS--------------------------------\nlattice size: ", Lsize, "\n"))
+    # write(file, string("Bilinear J1: ", J1, "\n"))
+    # write(file, string("Biquadratic J2: ", J2, "\n"))
+    # write(file, string("Spin Operators: \nSx: ", Sx, "\nSy: ", Sy, "\nSz: ", Sz, "\n"))
+    # write(file, string("Number of phonons: ", phdim, "\n"))
+    # write(file, string("Spring constants: ", spring, "\nCoupling: ", mat, "\n\n"))
 
     
 
@@ -187,12 +191,13 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     # 0 -1 0
     # 0 0 0]
 
-    return (lattice,gens,file)
+    # return (lattice,gens,file)
+    return (lattice,gens)
 end
 
 function runMC(T)
     # define dimensions
-    dim=2           # dimension of wavefunction (N)
+    dim=3           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
 
     phdim=2
@@ -202,10 +207,10 @@ function runMC(T)
     # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
 
     # set sweeps
-    thermSweeps=1000
-    sampleSweeps=1000
+    thermSweeps=200
+    sampleSweeps=200
 
-    # temp=ones(length(T))
+    # # temp=ones(length(T))
     # tmin=0.1
     # tmax=0.7
     # T=LinRange(tmin, tmax, commSize)[commRank+1]
@@ -216,7 +221,8 @@ function runMC(T)
     # beta = (commSize == 1) ? 1.0/tmin : 1.0 / (reverse([ tmax * (tmin / tmax)^(n/(commSize-1)) for n in 0:commSize-1 ])[commRank+1])
     # beta = temp./T
     # T = 1000.0
-    lattice,gens,file = makeLattice(dim, dim2, phdim)
+    # lattice,gens,file = makeLattice(dim, dim2, phdim)
+    lattice,gens = makeLattice(dim, dim2, phdim)
     lattice.Qmax = 0.05
 
     # run Monte Carlo sweeps
@@ -224,31 +230,37 @@ function runMC(T)
     run!(m,gens,dim, phdim)
     e,e2=means(m.observables.energy)
 
-    write(file, string("MC PARAMETERS-----------------------------------\n"))
-    write(file, string("temperature: ", 1/beta, "\n"))
-    write(file, string("number of therm sweeps: ", thermSweeps, "\n"))
-    write(file, string("number of measure sweeps: ", sampleSweeps, "\n\n"))
+    # write(file, string("MC PARAMETERS-----------------------------------\n"))
+    # write(file, string("temperature: ", 1/beta, "\n"))
+    # write(file, string("number of therm sweeps: ", thermSweeps, "\n"))
+    # write(file, string("number of measure sweeps: ", sampleSweeps, "\n\n"))
 
-    # # print magnetization
-    # print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
+    # # # print magnetization
+    # # print("Magnetization vector: ", getMagnetization(m.lattice,dim), "\n")
 
-    # # print energy
-    write(file, string("MC RESULTS--------------------------------------\n"))
-    write(file, string("Final energy: ", e, "\nFinal energy squared: ", e2, "\n"))
+    # # # print energy
+    # write(file, string("MC RESULTS--------------------------------------\n"))
+    # write(file, string("Final energy: ", e, "\nFinal energy squared: ", e2, "\n"))
     # close(file)
 
     # print(m.lattice.spins)
     # return (m, gens, file)
     # return (m.energySeries)
-    c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice) 
-    return mean(m.observables.energy, c)
+    return(m,gens)
+    # c(e) = beta * beta * (e[2] - e[1] * e[1]) * length(m.lattice) 
+    # return mean(m.observables.energy, c)
 end
 
-Tvals = LinRange(0.1, 4, 40)
-heat = zeros(40)
-for i in 1:length(Tvals)
-    heat[i] = runMC(Tvals[i])
-end
+# Tvals = LinRange(0.1, 4, 40)
+# heat = zeros(40)
+# for i in 1:length(Tvals)
+#     heat[i] = runMC(Tvals[i])
+# end
+
+
+# tick= time()
+# heat = runMC(0.001)
+# tock = time()
 
 #  # plot energy vs sweeps
 # title = string("SU(", dim, ") FM heat capacity")
@@ -262,12 +274,13 @@ end
 # heat = zeros(Tpoints)
 
 # tick = time()
-# m,gens, file=runMC(0.01)
+m,gens=runMC(0.001)
 # tock = time()
+# print(tock-tick)
 
 # file = open("mc_plots/output_BBQTriLattice_FM.txt", "w")
 # write(file, string("MC runtime: ", tock-tick, "seconds\n"))
-close(file)
+# close(file)
 
 
 # for i in 1:length(Tvals)
@@ -275,10 +288,10 @@ close(file)
 # end
 
 
-title = string("SU(", dim, ") FM heat capacity")
-plot(Tvals, heat, title=title)
-xlabel!("T")
-ylabel!("C")
+# title = string("SU(", dim, ") FM heat capacity")
+# plot(Tvals, heat, title=title)
+# xlabel!("T")
+# ylabel!("C")
 
 # dim=2        # dimension of wavefunction (N)
 # dim2=dim^2-1    # dimension of spin vector (N^2-1)

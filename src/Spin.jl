@@ -25,6 +25,12 @@ function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rn
     return (rot*s1)
 end
 
+
+# function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
+#     vec=rand(Complex{Float64}, dim)
+#     return (vec/=LinearAlgebra.norm(vec))
+# end
+
 # function proposeUpdate(site::Int64, lattice::Lattice{D,N,dim,phdim}, gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim}
 #     theta = rand(2)
 #     phi = rand(3)*2*pi
@@ -40,7 +46,7 @@ end
 
 #     # d = uniformOnSphere(gens.dim)
 #     return d
-
+# end
 #     # vec=rand(Complex{Float64}, gens.dim)
 #     # return (vec/=LinearAlgebra.norm(vec))
 
