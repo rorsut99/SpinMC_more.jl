@@ -21,13 +21,13 @@ function makeGenerators(dim::Int)
     # produce generator matrices for different dim
     if (dim==2)
         # Pauli matrices
-        sx=[0+0.0im 1.0+0im 
+        sx=0.5*[0+0.0im 1.0+0im 
             1.0+0im 0+0im]
-        sy=[0 -1.0im
+        sy=0.5*[0 -1.0im
             1.0im 0]
-        sz=[1.0+0im 0
+        sz=0.5*[1.0+0im 0
             0 -1.0+0im]
-        s9 = Matrix(1.0I, 2, 2)
+        s9 = 0.5*Matrix(1.0I, 2, 2)
 
         # calculate norm
         norm = sx^2 + sy^2 + sz^2
@@ -78,11 +78,11 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     gens=initGen(dim)
 
-    Sx=[0+0.0im 1.0+0im 
+    Sx=0.5*[0+0.0im 1.0+0im 
     1.0+0im 0+0im]
-    Sy=[0 -1.0im
+    Sy=0.5*[0 -1.0im
     1.0im 0]
-    Sz=[1.0+0im 0
+    Sz=0.5*[1.0+0im 0
     0 -1.0+0im]
 
     # Sx=[0 0 1.0+0im
@@ -226,7 +226,7 @@ end
 
 
 
-n = 200
+n = 2000
 x = zeros(n)
 x2 = zeros(n)
 x3 = zeros(n)
@@ -272,8 +272,8 @@ for i in 1:n
 
 
 
-    # y[i] = evs.lattice.expVals[2,1]
-    # z[i] = evs.lattice.expVals[3,1]
+    y[i] = evs.lattice.expVals[2,1]
+    z[i] = evs.lattice.expVals[3,1]
     # spinNorm[i]=sqrt(x[i]^2+y[i]^2+z[i]^2)
     # if i<(n-10)
     #     x2[i] = evs.lattice.expVals[1,1]
@@ -310,10 +310,10 @@ end
 
 # print(tend-tstart,"\n")
 
-title = string("time evolution energy")
-plot(tpoints,evs.obs.totalEnergySeries, title=title)
-xlabel!("time")
-ylabel!("energy")
+# title = string("time evolution energy")
+p1=plot(tpoints,evs.obs.totalEnergySeries,label="")
+xlabel!("Time(1/J)")
+ylabel!("Energy Density(J/N)")
 
 
 # plot(spinNorm)
@@ -323,13 +323,13 @@ ylabel!("energy")
 # plot!(x4,label=string(tols[4]))
 
 
-# p2=plot(x,y,z,label="Spin Trajectory")
-# xlabel!("Sx")
-# ylabel!("Sy")
-# zlabel!("Sz")
+p2=plot(x,y,z,label="Spin Trajectory")
+xlabel!("Sx")
+ylabel!("Sy")
+zlabel!("Sz")
 
-# p=[p1 p2]
-# plot(p1,p2,layout=2)
+p=[p1 p2]
+plot(p1,p2,layout=2)
 
 # plot([(tpoints,evs.obs.totalEnergySeries),(x,y,z)],layout=2)
 

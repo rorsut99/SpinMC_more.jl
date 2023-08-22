@@ -52,18 +52,18 @@ function initEv(dim,lattice,gens,timeStep,phdim)
 
 
     # FM initialization
-    # expVals=zeros(dim^2,length(lattice))
-    # for site in 1:length(lattice)
-    #     if site==1
-    #         vec=[0.0,0.2,1.0]
-    #         vec/=norm(vec)
-    #         push!(vec,1.0)
-    #         expVals[:,site]=vec
-    #     else
-    #         vec=[0.0,0,1.0,1.0]
-    #         expVals[:,site]=vec
-    #     end
-    # end
+    expVals=zeros(dim^2,length(lattice))
+    for site in 1:length(lattice)
+        if site==1
+            vec=[0.0,0.2,1.0]
+            vec/=norm(vec)
+            push!(vec,1.0)
+            expVals[:,site]=vec
+        else
+            vec=[0.0,0,1.0,1.0]
+            expVals[:,site]=vec
+        end
+    end
 
     # evs.lattice.expVals=deepcopy(expVals)
     # evs.latticePrev.expVals=deepcopy(expVals)
@@ -98,10 +98,10 @@ function initEv(dim,lattice,gens,timeStep,phdim)
     #     end
     # end
 
-    # evs.lattice.expVals=deepcopy(expVals)
-    # evs.latticePrev.expVals=deepcopy(expVals)
+    evs.lattice.expVals=deepcopy(expVals)
+    evs.latticePrev.expVals=deepcopy(expVals)
 
-    # lattice.expVals=deepcopy(expVals)
+    lattice.expVals=deepcopy(expVals)
 
 
 

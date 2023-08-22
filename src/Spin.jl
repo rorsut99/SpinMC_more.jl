@@ -22,7 +22,11 @@ function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rn
     phi = 2.0 * pi * rand()
     rot=exp(1im*phi*gen)
 
-    return (rot*s1)
+    ret=rot*s1
+    ret/=norm(ret)
+    ret*=sqrt(2)
+
+    return (ret)
 end
 
 

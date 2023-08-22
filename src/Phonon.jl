@@ -60,7 +60,7 @@ function couplingMatrix(gens,order, M, dim, phdim)
 end
 
 function getPhononMomentum(evs, site::Int) 
-    return (evs.phononMomentaPrev[:,site])
+    return (evs.phononMomenta[:,site])
 end
 
 function setPhononMomentum!(evs, site::Int, newState::Vector{Float64}) 

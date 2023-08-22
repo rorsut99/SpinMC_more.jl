@@ -21,13 +21,13 @@ function makeGenerators(dim::Int)
     # produce generator matrices for different dim
     if (dim==2)
         # Pauli matrices
-        sx=[0+0.0im 1.0+0im 
+        sx=0.5*[0+0.0im 1.0+0im 
             1.0+0im 0+0im]
-        sy=[0 -1.0im
+        sy=0.5*[0 -1.0im
             1.0im 0]
-        sz=[1.0+0im 0
+        sz=0.5*[1.0+0im 0
             0 -1.0+0im]
-        s9 = Matrix(1.0I, 2, 2)
+        s9 = 0.5*Matrix(1.0I, 2, 2)
 
         # calculate norm
         norm = sx^2 + sy^2 + sz^2
@@ -78,11 +78,11 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
 
     gens=initGen(dim)
 
-    Sx=[0+0.0im 1.0+0im 
+    Sx=0.5*[0+0.0im 1.0+0im 
     1.0+0im 0+0im]
-    Sy=[0 -1.0im
+    Sy=0.5*[0 -1.0im
     1.0im 0]
-    Sz=[1.0+0im 0
+    Sz=0.5*[1.0+0im 0
     0 -1.0+0im]
 
     # Sx=[0 0 1.0+0im
@@ -129,9 +129,9 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     Lsize=(100,)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
 
-    spring = [0.0,0.0,0.0]
+    spring = [1.0,1.0,1.0]
     # mat = [1.0; 0.0; 0.0 ;;]
-    mat =-0.0*[1.0 0.0 0.0
+    mat =-1.0*[1.0 0.0 0.0
         0.0  1.0 0.0
         0.0  0.0 1.0]
 
@@ -196,29 +196,54 @@ T=0.01
 m,gens=runMC(T)
 
 
+function findKets(lattice,gens)
+    for site in 1:length(lattice)
+        x=(site-1)/99
+        expVals=[cos(2*pi*x^2)*sin(2*pi*x^3),sin(2*pi*x^2)*sin(2*pi*x^3),cos(2*pi*x^3)]
+
+        res=sum(expVals.*gens.spinOperators)
+        eigVec=eigvecs(res)
+        eigVal=eigvals(res)
+        ind=findmax(eigVal)[2]
+
+        state=eigVec[:,ind]
+        state/=norm(state)
+        state*=sqrt(2)
+
+
+        lattice.spins[:,site]=state
+    end
+end
+
 
 #test case
 # for site in 1:length(m.lattice)
 #     if site==1
-#         newState=[0.9+0im,0.1+0im]
+#         newState=[0.1+0im,1.0+0im]
 #         newState/=norm(newState)
+#         newState*=sqrt(2)
 #         setSpin!(m.lattice,site,newState)
 #     else
-#         setSpin!(m.lattice,site,[1.0+0im,0])
+#         setSpin!(m.lattice,site,sqrt(2)*[1.0+0im,0])
 #     end
 # end
 
 
 
-timeStep=0.01
+timeStep=0.001
+phdim=3
 
 
 
 
-
+findKets(m.lattice,gens)
 
 hp=initHeunP(gens.dim,m.lattice,3)
+
 setDT!(hp,timeStep)
+setPhononMass!(hp, [1.0, 1.0,1.0], 3)
+setPhononDamp!(hp,[0.5,0.5,0.5],3)
+initPhMomentum!(hp,T,phdim)
 
 
 
@@ -250,7 +275,7 @@ end
 
 
 
-n = 5000
+n = 20000
 x = zeros(n)
 x2 = zeros(n)
 x3 = zeros(n)
@@ -258,6 +283,8 @@ x4 = zeros(n)
 y = zeros(n)
 z = zeros(n)
 spinNorm = zeros(n)
+deltaE = zeros(n+1)
+deltaE[1]=0
 
 phx = zeros(n)
 phz = zeros(n)
@@ -270,9 +297,14 @@ phz = zeros(n)
 
 
 
-spinEnergy= getEnergy(hp.lattice,gens)
-print(spinEnergy/length(m.lattice),"\n")
-measureEvObservables!(hp, spinEnergy/length(m.lattice), 0/length(m.lattice), 0/length(m.lattice))
+
+
+
+spinEnergyi, phononEnergyi, energyi = getEvEnergy(hp,gens,hp.lattice)
+# spinEnergyi=getEnergy(hp.lattice,gens)
+
+print(spinEnergyi/length(m.lattice),"\n")
+measureEvObservables!(hp, spinEnergyi/length(m.lattice), phononEnergyi/length(m.lattice), energyi/length(m.lattice))
 # print("Exp Vals Energy:",getEvSpinEnergy(evs,gens)/length(evs.lattice),"\n")
 # print("State Final Energy:",getEnergy(evs.lattice,gens)/length(evs.lattice),"\n")
 # print(evs.lattice.phonons[1,1])
@@ -282,16 +314,21 @@ measureEvObservables!(hp, spinEnergy/length(m.lattice), 0/length(m.lattice), 0/l
 
 tol=1e-8
 tols=[1e-6,1e-7,1e-8,1e-9]
+phdim=3
 
 for i in 1:n
     pos=genExpVals(getSpin(hp.lattice,1),gens)
     x[i]=pos[1]
     y[i]=pos[2]
     z[i]=pos[3]
-    evolveHP!(hp,gens)
+    phx[i] = hp.lattice.phonons[1,1]
+    evolveHP!(hp,gens,3)
+    
 
-    spinEnergy = getEnergy(hp.lattice,gens)
-    measureEvObservables!(hp, spinEnergy/length(m.lattice), 0/length(m.lattice), 0/length(m.lattice))
+    spinEnergy, phononEnergy, energy = getEvEnergy(hp,gens,hp.lattice)
+    # spinEnergy=getEnergy(hp.lattice,gens)
+    deltaE[i+1] = abs(energy - energyi)
+    measureEvObservables!(hp, spinEnergy/length(m.lattice), phononEnergy/length(m.lattice), energy/length(m.lattice))
     # print(spinEnergy/length(evs.lattice),"\n")
     
     if i==n
@@ -320,11 +357,14 @@ end
 
 # print(tend-tstart,"\n")
 
-title = string("time evolution energy")
-plot(tpoints,hp.obs.spinEnergySeries, title=title)
-xlabel!("time")
-ylabel!("energy")
+# title = string("time evolution energy")
+plot(tpoints,hp.obs.spinEnergySeries, label=string(timeStep))
+xlabel!("Time (1/J)")
+ylabel!("|dE|")
 
+
+
+# plot(phx)
 
 # plot(spinNorm)
 # plot(x)

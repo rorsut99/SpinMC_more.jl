@@ -34,7 +34,7 @@ function getEvEnergy(evs,gens::Generators, lattice)
     Id=Matrix((1.0+0im)I,d,d)
     for site in 1:length(lattice)
         # get vector of exp values for site
-        s0 = getExpValSpin(evs, site)
+        s0 = genExpVals(getSpin(evs.lattice, site),gens)
         p0 = getPhonon(lattice, site)
         # tempS0=copy(s0)
         
@@ -46,7 +46,7 @@ function getEvEnergy(evs,gens::Generators, lattice)
         interactionMatrices = getInteractionMatrices(lattice, site)
         for i in 1:length(interactionSites)
             # get vector of exp values for interaction site
-            s1 = getExpValSpin(evs, interactionSites[i])
+            s1 = genExpVals(getSpin(evs.lattice, interactionSites[i]),gens)
             # tempS1=copy(s1)
             # push!(tempS1,calcInnerProd(getSpin(lattice,interactionSites[i]),Id,getSpin(lattice,interactionSites[i])))
             if site > interactionSites[i]
@@ -56,11 +56,10 @@ function getEvEnergy(evs,gens::Generators, lattice)
 
         phEnergy += phononPotentialEnergy(lattice, p0)
         energy += spinPhononCoupling(lattice, s0, p0)
-        phEnergy += sum((evs.phononMomentaPrev[:,site] .^ 2) ./ (2 .* evs.phononMass))
-        # energy += (evs.phononMomentaPrev[2,site]^2)/(2*evs.phononMass[2])
+        phEnergy += sum((evs.phononMomenta[:,site] .^ 2) ./ (2 .* evs.phononMass))
 
         damping = evs.phononDamp
-        phEnergy -= dot(damping.*p0, evs.phononMomentaPrev[:,site])
+        phEnergy -= dot(damping.*p0, evs.phononMomenta[:,site])
 
         #onsite interaction
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
