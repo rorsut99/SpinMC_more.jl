@@ -54,8 +54,8 @@ function getEvEnergy(evs,gens::Generators, lattice)
             end
         end
 
-        phEnergy += phononPotentialEnergy(lattice, p0)
-        energy += spinPhononCoupling(lattice, s0, p0)
+        phEnergy += phononPotentialEnergy(lattice, p0) + spinPhononCoupling(lattice, s0, p0)
+        # energy += spinPhononCoupling(lattice, s0, p0)
         phEnergy += sum((evs.phononMomenta[:,site] .^ 2) ./ (2 .* evs.phononMass))
 
         damping = evs.phononDamp

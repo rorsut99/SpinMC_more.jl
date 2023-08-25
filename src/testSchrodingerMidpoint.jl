@@ -97,6 +97,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     AFMint = Matrix(1.0I,dim2,dim2)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim2,dim2)
     addBasisSite!(uc,(0.0,),dim)
+    
     addInteraction!(uc,gens,1,1,FMint,1,(1,))
     # addInteraction!(uc,gens,1,1,FMint,1,(0,1))
     # nearest neighbour interaction
@@ -105,9 +106,9 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     setField!(uc,gens,1,B)   
     Lsize=(100,)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
-    spring = [0.0,0.0,0.0]
+    spring = [1.0,1.0,1.0]*(2*pi)^2
     # mat = [1.0; 0.0; 0.0 ;;]
-    mat =-0.0*[1.0 0.0 0.0
+    mat =-1.0*[1.0 0.0 0.0
         0.0  1.0 0.0
         0.0  0.0 1.0]
     addSpringConstant!(lattice, spring, phdim)
@@ -123,8 +124,8 @@ function runMC(T)
     # commSize = MPI.Comm_size(MPI.COMM_WORLD)
     # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
     # set sweeps
-    thermSweeps=100
-    sampleSweeps=100
+    thermSweeps=1000
+    sampleSweeps=1000
     # temp=ones(length(T))
     # tmin=0.1
     # tmax=0.7
@@ -187,7 +188,7 @@ function findKets(lattice,gens)
     end
 end
 
-findKets(m.lattice,gens)
+# findKets(m.lattice,gens)
 
 
 
@@ -199,9 +200,13 @@ function drive(t)
     x=0.000*cos(t)
     return (x)
 end
+
+initPhMomentum!(smp,T,3)
+setPhononMass!(smp,[1.0,1.0,1.0],3)
+setPhononDamp!(smp,[0.0,0.0,0.0],3)
 # driveFuncs=[drive,drive]
 # addPhononDrive!(evs,driveFuncs,2)
-n = 50000
+n = 5000
 x = zeros(n)
 x2 = zeros(n)
 x3 = zeros(n)
@@ -211,10 +216,11 @@ z = zeros(n)
 spinNorm = zeros(n)
 phx = zeros(n)
 phz = zeros(n)
+deltaE = zeros(n)
 # print(evs.lattice.expVals[:,5], "\n")
-spinEnergyi= getEnergy(smp.lattice,gens)
+spinEnergyi, phononEnergyi, energyi = getEvEnergy(smp,gens,smp.lattice)
 print(spinEnergyi/length(m.lattice),"\n")
-measureEvObservables!(smp, spinEnergyi/length(m.lattice), 0/length(m.lattice), 0/length(m.lattice))
+measureEvObservables!(smp, spinEnergyi/length(m.lattice), phononEnergyi/length(m.lattice), energyi/length(m.lattice))
 # print("Exp Vals Energy:",getEvSpinEnergy(evs,gens)/length(evs.lattice),"\n")
 # print("State Final Energy:",getEnergy(evs.lattice,gens)/length(evs.lattice),"\n")
 # print(evs.lattice.phonons[1,1])
@@ -227,9 +233,12 @@ for i in 1:n
     x[i]=pos[1]
     y[i]=pos[2]
     z[i]=pos[3]
-    evolveSMP!(smp,smp.lattice,gens)
-    spinEnergy = getEnergy(smp.lattice,gens)
-    measureEvObservables!(smp, spinEnergy/length(m.lattice), 0/length(m.lattice), 0/length(m.lattice))
+    phx[i] = smp.lattice.phonons[1,1]
+    phz[i] = smp.lattice.phonons[1,3]
+    evolveSMP!(smp,smp.lattice,gens,3)
+    spinEnergy, phononEnergy, energy = getEvEnergy(smp,gens,smp.lattice)
+    deltaE[i] = abs(energy - energyi)
+    measureEvObservables!(smp, spinEnergy/length(m.lattice), phononEnergy/length(m.lattice), energy/length(m.lattice))
     # print(spinEnergy/length(evs.lattice),"\n")
     
     if i==n
@@ -246,15 +255,15 @@ end
 
 # print(evs.obs.energySeries)
 
-tpoints=zeros(n+1)
-tpoints[1]=0
-for i in 2:n
-    tpoints[i+1]=smp.dt*i
+tpoints=zeros(n)
+# tpoints[1]=0
+for i in 1:n
+    tpoints[i]=smp.dt*i
 end
 # tend=time()
 # print(tend-tstart,"\n")
 
-plot(tpoints,100*abs.(smp.obs.spinEnergySeries.-spinEnergyi/length(m.lattice)), label="")
+plot(tpoints,deltaE, label=string(timeStep))
 xlabel!("t(1/J)")
 ylabel!("|dE|")
 
@@ -264,7 +273,7 @@ ylabel!("|dE|")
 
 
 # plot(spinNorm)
-# plot(x)
+# plot(phx)
 # plot!(x2,label=string(tols[2]))
 # plot!(x3,label=string(tols[3]))
 # plot!(x4,label=string(tols[4]))
