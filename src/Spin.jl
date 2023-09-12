@@ -117,8 +117,8 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim}, gens::Generators)::Float64 w
         #field interaction
         #energy += dot(s0, getInteractionField(lattice, site))
     end
-
-    return energy
+    abs(energy.im) < 1e-6 || error(string("Imaginary part of total energy is too large."))
+    return real(energy)
 end
 
 """
@@ -153,7 +153,8 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, gens::Generato
     #field interaction
     #dE += dot(ds, getInteractionField(lattice, site))
     dE=E1-E2
-    return dE
+    abs(dE.im) < 1e-6 || error(string("Imaginary part of spin energy change is too large."))
+    return real(dE)
 end
 
 """
@@ -176,8 +177,8 @@ function getPhononEnergyDifference(lattice::Lattice{D,N,dim,phdim}, gens::Genera
 
     #field interaction
     #dE += dot(ds, getInteractionField(lattice, site))
-
-    return dE
+    abs(dE.im) < 1e-6 || error(string("Imaginary part of phonon energy change is too large."))
+    return real(dE)
 end
 
 function getMagnetization(lattice::Lattice{D,N,dim,phdim},gens::Generators) where {D,N,dim,phdim}

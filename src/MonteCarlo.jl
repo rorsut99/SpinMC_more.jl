@@ -90,7 +90,14 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
     #init Monte Carlo run
     totalSweeps = mc.thermalizationSweeps + mc.measurementSweeps
     partnerSpinConfiguration = deepcopy(mc.lattice.spins)
+    partnerPhononConfiguration = deepcopy(mc.lattice.phonons)
     energy = getEnergy(mc.lattice,gens)
+
+    if(energy<0)
+        print(energy,"\n")
+    end
+
+
 
     #launch Monte Carlo run
     lastCheckpointTime = time()
@@ -98,6 +105,9 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
     rank == 0 && @printf("Simulation started on %s.\n\n", Dates.format(Dates.now(), "dd u yyyy HH:MM:SS"))
 
     while mc.sweep < totalSweeps
+        if(energy<0)
+            print(energy,"\n")
+        end
         #perform local sweep
         for i in 1:length(mc.lattice)
             #select random spin
@@ -138,36 +148,38 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
         statistics.sweeps += 1
 
         #perform replica exchange
-        if enableMPI && mc.sweep % mc.replicaExchangeRate == 0
-            #determine MPI rank to exchagne configuration with
-            if iseven(mc.sweep ÷ mc.replicaExchangeRate)
-                partnerRank = iseven(rank) ? rank + 1 : rank - 1
-            else
-                partnerRank = iseven(rank) ? rank - 1 : rank + 1
-            end
+        # if enableMPI && mc.sweep % mc.replicaExchangeRate == 0
+        #     #determine MPI rank to exchagne configuration with
+        #     if iseven(mc.sweep ÷ mc.replicaExchangeRate)
+        #         partnerRank = iseven(rank) ? rank + 1 : rank - 1
+        #     else
+        #         partnerRank = iseven(rank) ? rank - 1 : rank + 1
+        #     end
 
-            if partnerRank >= 0 && partnerRank < commSize
-                #obtain energy of new configuration
-                partnerEnergy = MPISendrecvFloat(energy, partnerRank, MPI.COMM_WORLD)
+        #     if partnerRank >= 0 && partnerRank < commSize
+        #         #obtain energy of new configuration
+        #         partnerEnergy = MPISendrecvFloat(energy, partnerRank, MPI.COMM_WORLD)
 
-                #check acceptance of new configuration
-                statistics.attemptedReplicaExchanges += 1
-                exchangeAccepted = false
-                if iseven(rank)
-                    p = exp(-(allBetas[rank + 1] - allBetas[partnerRank + 1]) * (partnerEnergy - energy))
-                    exchangeAccepted = (rand(mc.rng) < min(1.0, p)) ? true : false
-                    MPISendBool(exchangeAccepted, partnerRank, MPI.COMM_WORLD)
-                else
-                    exchangeAccepted = MPIRecvBool(partnerRank, MPI.COMM_WORLD)
-                end
-                if (exchangeAccepted)
-                    energy = partnerEnergy
-                    MPI.Sendrecv!(mc.lattice.spins, partnerRank, 0, partnerSpinConfiguration, partnerRank, 0, MPI.COMM_WORLD)
-                    (mc.lattice.spins, partnerSpinConfiguration) = (partnerSpinConfiguration, mc.lattice.spins)
-                    statistics.acceptedReplicaExchanges += 1
-                end
-            end
-        end
+        #         #check acceptance of new configuration
+        #         statistics.attemptedReplicaExchanges += 1
+        #         exchangeAccepted = false
+        #         if iseven(rank)
+        #             p = exp(-(allBetas[rank + 1] - allBetas[partnerRank + 1]) * (partnerEnergy - energy))
+        #             exchangeAccepted = (rand(mc.rng) < min(1.0, p)) ? true : false
+        #             MPISendBool(exchangeAccepted, partnerRank, MPI.COMM_WORLD)
+        #         else
+        #             exchangeAccepted = MPIRecvBool(partnerRank, MPI.COMM_WORLD)
+        #         end
+        #         if (exchangeAccepted)
+        #             energy = partnerEnergy
+        #             MPI.Sendrecv!(mc.lattice.spins, partnerRank, 0, partnerSpinConfiguration, partnerRank, 0, MPI.COMM_WORLD)
+        #             MPI.Sendrecv!(mc.lattice.phonons, partnerRank, 0, partnerPhononConfiguration, partnerRank, 0, MPI.COMM_WORLD)
+        #             (mc.lattice.spins, partnerSpinConfiguration) = (partnerSpinConfiguration, mc.lattice.spins)
+        #             (mc.lattice.phonons, partnerPhononConfiguration) = (partnerPhononConfiguration, mc.lattice.phonons)
+        #             statistics.acceptedReplicaExchanges += 1
+        #         end
+        #     end
+        # end
 
         #perform measurement
         if mc.sweep >= mc.thermalizationSweeps

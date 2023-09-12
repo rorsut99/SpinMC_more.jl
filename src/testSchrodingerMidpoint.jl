@@ -64,7 +64,7 @@ function makeGenerators(dim::Int)
 end
 function makeLattice(dim::Int, dim2::Int, phdim::Int)
     # define cubic lattice with Heisenberg interaction
-    a1=(1.0,)
+    a1=(1.0,0.0)
     a2=(0.0,1.0)
     gens=initGen(dim)
     Sx=0.5*[0+0.0im 1.0+0im 
@@ -92,21 +92,25 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
         addGenerator!(gens,gen)
     end
     setGenReps!(gens)
-    uc = UnitCell(a1)
+    uc = UnitCell(a1,a2)
     FMint = Matrix(-1.0I,dim2,dim2)      # Heisenberg interaction
     AFMint = Matrix(1.0I,dim2,dim2)      # Heisenberg interaction
     Zero = Matrix(0.0I,dim2,dim2)
-    addBasisSite!(uc,(0.0,),dim)
+    addBasisSite!(uc,(0.0,0.0),dim)
     
-    addInteraction!(uc,gens,1,1,FMint,1,(1,))
+
+    # FMint[1,1]=0.95
+    # FMint[2,2]=0.95
+    addInteraction!(uc,gens,1,1,FMint,1,(1,0))
+    addInteraction!(uc,gens,1,1,FMint,1,(0,1))
     # addInteraction!(uc,gens,1,1,FMint,1,(0,1))
     # nearest neighbour interaction
     # added parameter to take in the order of the term in the hamiltonian
     B=[0.0,0,0.0]
     setField!(uc,gens,1,B)   
-    Lsize=(100,)       # size of lattice
+    Lsize=(10,10)       # size of lattice
     lattice=Lattice(uc,Lsize,dim,phdim)
-    spring = [1.0,1.0,1.0]*(2*pi)^2
+    spring = [1.0,1.0,1.0]
     # mat = [1.0; 0.0; 0.0 ;;]
     mat =-1.0*[1.0 0.0 0.0
         0.0  1.0 0.0
@@ -156,6 +160,9 @@ end
 tstart=time()
 T=0.01
 m,gens=runMC(T)
+finalState!(m.lattice,gens)
+phonons=deepcopy(m.lattice.phonons)
+spins=deepcopy(m.lattice.expVals)
 #test case
 # for site in 1:length(m.lattice)
 #     if site==1
@@ -203,7 +210,7 @@ end
 
 initPhMomentum!(smp,T,3)
 setPhononMass!(smp,[1.0,1.0,1.0],3)
-setPhononDamp!(smp,[0.0,0.0,0.0],3)
+setPhononDamp!(smp,[0.5,0.5,0.5],3)
 # driveFuncs=[drive,drive]
 # addPhononDrive!(evs,driveFuncs,2)
 n = 5000
@@ -215,12 +222,18 @@ y = zeros(n)
 z = zeros(n)
 spinNorm = zeros(n)
 phx = zeros(n)
+phy = zeros(n)
 phz = zeros(n)
+
+
+avgx = zeros(n)
+avgy = zeros(n)
+avgz = zeros(n)
 deltaE = zeros(n)
 # print(evs.lattice.expVals[:,5], "\n")
-spinEnergyi, phononEnergyi, energyi = getEvEnergy(smp,gens,smp.lattice)
+spinEnergyi, phononEnergyi, coupledEnergyi, energyi = getEvEnergy(smp,gens,smp.lattice)
 print(spinEnergyi/length(m.lattice),"\n")
-measureEvObservables!(smp, spinEnergyi/length(m.lattice), phononEnergyi/length(m.lattice), energyi/length(m.lattice))
+measureEvObservables!(smp, spinEnergyi/length(m.lattice), phononEnergyi/length(m.lattice), coupledEnergyi/length(m.lattice), energyi/length(m.lattice))
 # print("Exp Vals Energy:",getEvSpinEnergy(evs,gens)/length(evs.lattice),"\n")
 # print("State Final Energy:",getEnergy(evs.lattice,gens)/length(evs.lattice),"\n")
 # print(evs.lattice.phonons[1,1])
@@ -233,12 +246,30 @@ for i in 1:n
     x[i]=pos[1]
     y[i]=pos[2]
     z[i]=pos[3]
+
+
+
+    avgx[i] = mean(abs.(smp.lattice.phonons[1,:]))
+    avgy[i] = mean((abs.(smp.lattice.phonons[2,:])))
+    avgz[i] = mean((abs.(smp.lattice.phonons[3,:])))
+
+
     phx[i] = smp.lattice.phonons[1,1]
-    phz[i] = smp.lattice.phonons[1,3]
+    phy[i] = smp.lattice.phonons[2,1]
+    phz[i] = smp.lattice.phonons[3,1]
     evolveSMP!(smp,smp.lattice,gens,3)
-    spinEnergy, phononEnergy, energy = getEvEnergy(smp,gens,smp.lattice)
-    deltaE[i] = abs(energy - energyi)
-    measureEvObservables!(smp, spinEnergy/length(m.lattice), phononEnergy/length(m.lattice), energy/length(m.lattice))
+
+
+    # if i==1
+    #     firstIteration!(smp,smp.lattice,gens,3)
+    # else
+    #     evolveSMP!(smp,smp.lattice,gens,3)
+    # end
+
+
+    spinEnergy, phononEnergy, coupledEnergy, energy = getEvEnergy(smp,gens,smp.lattice)
+    deltaE[i] = abs(energy + coupledEnergy - energyi-coupledEnergyi)
+    measureEvObservables!(smp, spinEnergy/length(m.lattice), phononEnergy/length(m.lattice), coupledEnergy/length(m.lattice), energy/length(m.lattice))
     # print(spinEnergy/length(evs.lattice),"\n")
     
     if i==n

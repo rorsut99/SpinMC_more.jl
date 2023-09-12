@@ -146,7 +146,7 @@ end
 
 function updateHZm!(smp, lattice, gens)
     for site in 1:length(lattice)
-        p0=getQm(smp,site)
+        p0=getQi(smp,site)
         pInteraction=smp.lattice.phononCoupling
         pRes=pInteraction*p0
 
@@ -162,21 +162,21 @@ function updateHZm!(smp, lattice, gens)
         smp.HZm[site]=sum(scale.*gens.generators)+sum(pRes.*gens.generators)
     end
 end
-function evolveSpinSMP!(smp,lattice,gens)
-    for site in 1:length(lattice)
-        Z0 = getZi(smp,site)
-        Zf = getZf1(smp,site)
-        Zm = 0.5*(Zf + Z0)
-        setZm!(smp,site,Zm)
-    end
-    updateHZm!(smp,lattice,gens)
-    for site in 1:length(lattice)
-        Z0 = getZi(smp,site)
-        Zm = getZm(smp,site)
-        Zf = Z0 - ((1im*smp.dt)*(smp.HZm[site]*Zm))
-        setZf1!(smp,site,Zf)
-    end
-end
+# function evolveSpinSMP!(smp,lattice,gens)
+#     for site in 1:length(lattice)
+#         Z0 = getZi(smp,site)
+#         Zf = getZf1(smp,site)
+#         Zm = 0.5*(Zf + Z0)
+#         setZm!(smp,site,Zm)
+#     end
+#     updateHZm!(smp,lattice,gens)
+#     for site in 1:length(lattice)
+#         Z0 = getZi(smp,site)
+#         Zm = getZm(smp,site)
+#         Zf = Z0 - ((1im*smp.dt)*(smp.HZm[site]*Zm))
+#         setZf1!(smp,site,Zf)
+#     end
+# end
 
 
 function fullEvolve!(smp,lattice,gens,phdim)
@@ -230,6 +230,70 @@ function fullEvolve!(smp,lattice,gens,phdim)
 
 
 end
+
+
+function evolveSpin!(smp,lattice, gens)
+    for site in 1:length(lattice)
+        Z0 = getZi(smp,site)
+        Zf = getZf1(smp,site)
+        Zm = 0.5*(Zf + Z0)
+        setZm!(smp,site,Zm)
+    end
+    updateHZm!(smp,lattice,gens)
+    for site in 1:length(lattice)
+        Z0 = getZi(smp,site)
+        Zm = getZm(smp,site)
+        Zf = Z0 - ((1im*smp.dt)*(smp.HZm[site]*Zm))
+        setZf1!(smp,site,Zf)
+
+        setZf2!(smp,site,Zf)
+    end
+end
+
+function evolvePhonon!(smp,lattice,gens,phdim)
+    for site in 1:length(lattice)
+        Q0 = getQi(smp,site)
+        Qf = getQf1(smp,site)
+        Qm=0.5*(Qf+Q0)
+        setQm!(smp,site,Qm)
+
+
+        P0 = getPi(smp,site)
+        Pf = getPf1(smp,site)
+        Pm=0.5*(Pf+P0)
+        setPm!(smp,site,Pm)
+    end
+
+
+    for site in 1:length(lattice)
+        P0 = getPi(smp,site)
+        Pm = getPm(smp,site)
+
+
+        Q0 = getQi(smp,site)
+        Qm = getQm(smp,site)
+
+        coupling = smp.lattice.phononCoupling
+        Sm=midpointExpVal(gens,getZi(smp,site))
+
+        Qf = Q0 + (smp.dt)*Pm./smp.phononMass-(smp.dt)*smp.phononDamp.*Qm
+        Pf = P0 - (smp.dt)*smp.lattice.springConstants.*Qm - (smp.dt)*transpose(coupling)*Sm
+        setQf1!(smp,site,Qf)
+        setPf1!(smp,site,Pf)
+    end
+
+
+end
+
+
+
+
+
+
+
+
+
+
 
 
 function midpointExpVal(gens,s1)
@@ -302,15 +366,28 @@ function evolveSMP!(smp,lattice,gens,phdim)
         setQf1!(smp,site,Q0)
         setPf1!(smp,site,P0)
     end
+
     iterations=10
     for i in 1:iterations
-        Q1=getQf1(smp,1)[1]
-        fullEvolve!(smp,lattice,gens,phdim)
-        Q2=getQf1(smp,1)[1]
+        # Q1=getQf1(smp,1)[1]
+        evolveSpin!(smp,smp.lattice,gens)
+        # Q2=getQf1(smp,1)[1]
         # if(i==10)
         #     print(abs(Q2-Q1),"\n")
         # end
     end
+
+    for i in 1:iterations
+        # Q1=getQf1(smp,1)[1]
+        evolvePhonon!(smp,smp.lattice,gens,phdim)
+        # Q2=getQf1(smp,1)[1]
+        # if(i==10)
+        #     print(abs(Q2-Q1),"\n")
+        # end
+    end
+
+
+
     for site in 1:length(lattice)
         # phonon=evolvePhononSMP(gens,smp,site,gens.dim,phdim)
         # setPhonon!(smp.lattice,site,phonon[1:phdim])
@@ -331,6 +408,55 @@ function evolveSMP!(smp,lattice,gens,phdim)
         setPhononMomentum!(smp,site,P)
     end
 end
+
+function firstIteration!(smp,lattice,gens,phdim)
+    finalState!(smp.lattice,gens)
+    for site in 1:length(lattice)
+        Z0 = getZi(smp,site)
+        Q0 = getQi(smp,site)
+        P0=getPi(smp,site)
+
+        setZf1!(smp,site,Z0)
+        setZf2!(smp,site,Z0)
+        setQf1!(smp,site,Q0)
+        setPf1!(smp,site,P0)
+    end
+    iterations=10
+    for i in 1:iterations
+        evolveSpin!(smp,smp.lattice,gens)
+    end
+    smp.dt/=2
+    for i in 1:iterations
+        evolvePhonon!(smp,smp.lattice,gens,phdim)
+    end
+    smp.dt*=2
+
+    for site in 1:length(lattice)
+
+        Z = getZf1(smp,site)
+        setZi!(smp,site,Z)
+        setSpin!(lattice, site, Z)
+
+        Q = getQf1(smp,site)
+        setQi!(smp,site,Q)
+        setPhonon!(lattice,site,Q)
+
+
+        P = getPf1(smp,site)
+        setPi!(smp,site,P)
+        setPhononMomentum!(smp,site,P)
+    end
+end
+
+
+
+
+
+
+
+
+
+
 
 function initPhMomentum!(smp,T,phd)
 

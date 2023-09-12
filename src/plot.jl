@@ -23,8 +23,9 @@ function plotDat()
     dheat=zeros(Tpoints)
     
     heat = zeros(Tpoints)
+    energy = zeros(Tpoints)
     for i in 0:79
-        stem="data/simulation.h5."
+        stem="data/coupling.h5."
         app=string(i)
         filename=stem*app
         m = readMonteCarlo(filename)
@@ -38,7 +39,7 @@ function plotDat()
         # end
 
 
-
+        energy[i+1],temp = means(m.observables.energy)
 
         heat[i+1] = mean(m.observables.energy, c)
         dheat[i+1] = std_error(m.observables.energy, ∇c)
@@ -58,7 +59,8 @@ function plotDat()
     print(peakPos)
 
     # plot energy vs sweeps
-    plot(Tvals, heat,yerr=dheat,label="C(T)")
+    plot!(Tvals,heat,yerr=dheat,label="Coupling")
+    print(heat)
     xlabel!("T (J)")
     ylabel!("C")
 end 
