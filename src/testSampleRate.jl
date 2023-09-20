@@ -96,8 +96,8 @@ function makeLattice(dim::Int,  phdim::Int)
 
 
     K0=-1.0
-    K1=0.4
-    K2=0.2
+    K1=0.1
+    K2=0.05
 
     Phi=0.0
     xyInteraction=1.0*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
@@ -128,7 +128,7 @@ function makeLattice(dim::Int,  phdim::Int)
     addInteraction!(uc,gens,1,1,yzInteraction,1,(0,0,1))
     addInteraction!(uc,gens,1,1,yzInteraction,1,(-1,1,0))
 
-    Lsize=(4, 4, 4)
+    Lsize=(6, 6, 6)
     lattice=Lattice(uc,Lsize,dim,phdim) 
 
 
@@ -148,18 +148,18 @@ function runMC(T)
     dim=2           # dimension of wavefunction (N)
     dim2=dim^2-1    # dimension of spin vector (N^2-1)
     phdim=2
-    MPI.Initialized() || MPI.Init()
-    commSize = MPI.Comm_size(MPI.COMM_WORLD)
-    commRank = MPI.Comm_rank(MPI.COMM_WORLD)
+    # MPI.Initialized() || MPI.Init()
+    # commSize = MPI.Comm_size(MPI.COMM_WORLD)
+    # commRank = MPI.Comm_rank(MPI.COMM_WORLD)
     # set sweeps
-    thermSweeps=30000
-    sampleSweeps=70000
+    thermSweeps=300
+    sampleSweeps=700
 
 
     # tmin=1.0
     # tmax=8.0
     # T=LinRange(tmin, tmax, commSize)[commRank+1]
-    T=1.0
+
 
     TQ=0.4
     beta=1.0/T
@@ -171,7 +171,8 @@ function runMC(T)
 
 
     m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,dim,replicaExchangeRate=10)
-    run!(m,gens,dim, phdim,outfile="pseudoSpin-T=1.h5")
+    m.sampleRate=100
+    run!(m,gens,dim, phdim)
     # e,e2=means(m.observables.energy)
     # print("Final Average energy: ", e, "\nFinal Average energy squared: ", e2, "\n")
 
@@ -190,20 +191,5 @@ end
 # Tvals = LinRange(2.0, 6.0, Tpoints)
 # heat = zeros(Tpoints)
 
-T=1.0
+T=0.01
 m,gens=runMC(T)
-
-
-# for i in 1:length(Tvals)
-#     heat[i] = runMC(Tvals[i])
-# end
-
-
-
-# plot(Tvals, heat)
-# xlabel!("T")
-# ylabel!("C")
-
-
-# tend=time()
-# print(tend-tstart)

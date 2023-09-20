@@ -332,29 +332,14 @@ function evolveSMP!(smp,lattice,gens,phdim)
     end
 end
 
-function initPhMomentum!(smp,T,phd)
+function initPhMomentum!(smp,T,phd,mean=zeros(phd))
 
-    Umax=0.5*smp.lattice.springConstants.*(smp.lattice.Qmax.^2)
-    bound=exp.(-Umax/T)
     for site in 1:length(smp.lattice)
-        P=zeros(phd)
-        p0=getPhonon(smp.lattice,site)
-        Umin=0.5*smp.lattice.springConstants.*(p0.^2)
-        LowBound=exp.(-Umin/T)
-        for ph in 1:phd
-            P[ph]=rand(Uniform(bound[ph],LowBound[ph]))
+        v=zeros(phd)
+        for i in 1:phd
+            m=smp.phononMass[i]
+            v[i]=rand(Normal(mean[i],sqrt(m*T)))
         end
-        
-        
-        A=-2*T*log.(P)
-        B=smp.lattice.springConstants.*(p0.^2)
-        v=sqrt.((A .- B).*smp.phononMass)
-
-        choice=[1.0,-1.0]
-        sign=rand(choice,phd)
-
-        v.*=sign
-
 
         setPhononMomentum!(smp,site,v)
     end
@@ -387,4 +372,22 @@ end
 
 function getExpValSpin(smp, site)
     return smp.lattice.expVals[:,site]
+end
+
+
+
+function writeSMP(filename::String, smp)
+    h5open(filename, "w") do f
+        data = IOBuffer()
+        serialize(data, mc)
+        f["checkpoint"] = take!(data)
+    end
+end
+
+
+function readSMP(filename::String)
+    h5open(filename, "r") do f
+        data = IOBuffer(read(f["checkpoint"]))
+        return deserialize(data)
+    end
 end

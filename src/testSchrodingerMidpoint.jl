@@ -112,7 +112,7 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     lattice=Lattice(uc,Lsize,dim,phdim)
     spring = [1.0,1.0,1.0]
     # mat = [1.0; 0.0; 0.0 ;;]
-    mat =-1.0*[1.0 0.0 0.0
+    mat =-0.0*[1.0 0.0 0.0
         0.0  1.0 0.0
         0.0  0.0 1.0]
     addSpringConstant!(lattice, spring, phdim)
@@ -141,7 +141,7 @@ function runMC(T)
     # beta = temp./T
     # T = 1000.0
     lattice,gens = makeLattice(dim, dim2, phdim)
-    lattice.Qmax = 0.05
+    lattice.Qmax = 10.0
     # run Monte Carlo sweeps
     m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,dim,replicaExchangeRate=10)
     run!(m,gens,dim, phdim)
@@ -210,7 +210,7 @@ end
 
 initPhMomentum!(smp,T,3)
 setPhononMass!(smp,[1.0,1.0,1.0],3)
-setPhononDamp!(smp,[0.5,0.5,0.5],3)
+setPhononDamp!(smp,[0.0,0.0,0.0],3)
 # driveFuncs=[drive,drive]
 # addPhononDrive!(evs,driveFuncs,2)
 n = 5000
@@ -294,10 +294,12 @@ end
 # tend=time()
 # print(tend-tstart,"\n")
 
-plot(tpoints,deltaE, label=string(timeStep))
-xlabel!("t(1/J)")
-ylabel!("|dE|")
+# plot(tpoints,deltaE, label=string(timeStep))
+# xlabel!("t(1/J)")
+# ylabel!("|dE|")
 
+
+plot(phx)
 
 
 

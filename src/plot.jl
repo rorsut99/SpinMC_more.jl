@@ -25,7 +25,7 @@ function plotDat()
     heat = zeros(Tpoints)
     energy = zeros(Tpoints)
     for i in 0:79
-        stem="data/coupling.h5."
+        stem="data/simulation.h5."
         app=string(i)
         filename=stem*app
         m = readMonteCarlo(filename)

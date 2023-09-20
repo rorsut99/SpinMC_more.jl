@@ -29,6 +29,9 @@ mutable struct MonteCarlo{T<:Lattice,U<:AbstractRNG}
     seed::UInt
     sweep::Int
 
+
+
+
     energySeries::Vector{Float64}
     observables::Observables
 end
@@ -52,7 +55,7 @@ function MonteCarlo(
     return mc
 end
 
-function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing) where T<:Lattice
+function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile::Union{String,Nothing}=nothing, samplesOutfile::Union{String,Nothing}=nothing) where T<:Lattice
     #init MPI
     rank = 0
     commSize = 1
@@ -76,6 +79,9 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
         enableMPI && (outfile *= "." * string(rank))
         isfile(outfile) && error("File ", outfile, " already exists. Terminating.")
     end
+
+
+    enableSamples = typeof(samplesOutfile) != Nothing
     
     #init spin configuration
     if mc.sweep == 0
@@ -105,9 +111,9 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
     rank == 0 && @printf("Simulation started on %s.\n\n", Dates.format(Dates.now(), "dd u yyyy HH:MM:SS"))
 
     while mc.sweep < totalSweeps
-        if(energy<0)
-            print(energy,"\n")
-        end
+        # if(energy<0)
+        #     print(energy,"\n")
+        # end
         #perform local sweep
         for i in 1:length(mc.lattice)
             #select random spin
@@ -186,6 +192,12 @@ function run!(mc::MonteCarlo{T},gens::Generators, dim::Int, phdim::Int; outfile:
             if mc.sweep % mc.measurementRate == 0
                 performMeasurements!(mc.observables, mc.lattice, energy, gens, dim)
             end
+        end
+
+        if mc.sweep>=mc.thermalizationSweeps && mc.sweep%mc.sampleRate==0 && enableSamples
+            
+            writeMonteCarlo(samplesOutfile*"." * string(Int(mc.sweep/mc.sampleRate)), mc)
+
         end
 
      
