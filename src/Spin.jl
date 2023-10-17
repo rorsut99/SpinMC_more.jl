@@ -121,6 +121,32 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim}, gens::Generators)::Float64 w
     return real(energy)
 end
 
+function getPTEnergy(lattice::Lattice{D,N,dim,phdim}, gens::Generators) where {D,N,dim,phdim}
+    spinEnergy = 0.0
+    phononEnergy = 0.0
+    for site in 1:length(lattice)
+        # get vector of exp values for site
+        s0 = genExpVals(getSpin(lattice, site), gens)
+        p0 = getPhonon(lattice, site)
+
+        #two-spin interactions
+        interactionSites = getInteractionSites(lattice, site)
+        interactionMatrices = getInteractionMatrices(lattice, site)
+        for i in 1:length(interactionSites)
+            # get vector of exp values for interaction site
+            s1 = genExpVals(getSpin(lattice, interactionSites[i]), gens)
+            if site > interactionSites[i]
+                spinEnergy += exchangeEnergy(s0, interactionMatrices[i], s1)
+            end
+        end
+        phononEnergy += phononPotentialEnergy(lattice, p0)
+    end
+    return(real(spinEnergy),real(phononEnergy))
+end
+
+
+
+
 """
 returns energy difference between system with current spin and proposed new spin (newState)
 """
@@ -182,10 +208,10 @@ function getPhononEnergyDifference(lattice::Lattice{D,N,dim,phdim}, gens::Genera
 end
 
 function getMagnetization(lattice::Lattice{D,N,dim,phdim},gens::Generators) where {D,N,dim,phdim}
-    mag = zeros(gens.dim^2-1)
+    mag = zeros(gens.dim^2)
     for i in 1:length(lattice)
         spin = genExpVals(getSpin(lattice, i),gens)
-        mag+=spin
+        mag.+=real(spin)
     end
     return mag / length(lattice)
 end

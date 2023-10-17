@@ -56,7 +56,14 @@ function makeGenerators(dim::Int)
 end
 
 
-function runMD(filename)
+function runMD(filename,outfile)
+
+    MPI.Initialized() || MPI.Init()
+    commSize = MPI.Comm_size(MPI.COMM_WORLD)
+    commRank = MPI.Comm_rank(MPI.COMM_WORLD)
+
+    filename*=string(commRank)
+    outfile*=string(commRank)
 
     m=readMonteCarlo(filename)
     T=1/m.beta
@@ -67,11 +74,10 @@ function runMD(filename)
     smp=initSMP(gens.dim,m.lattice,2)
 
 
-
     g4=1/160
     initPhMomentum!(smp,T,2,[0.5,0.0])
     setPhononMass!(smp,[g4,g4],2)
-    setPhononDamp!(smp,[0.1,0.1],2)
+    setPhononDamp!(smp,[0.1,0.0],2)
 
 
 
@@ -101,18 +107,18 @@ function runMD(filename)
 
     for i in 1:n
         finalState!(smp.lattice,gens)
-        avgPHX[i]=mean(smp.lattice.phonons[1,:])
-        avgPHZ[i]=mean(smp.lattice.phonons[2,:])
+        # avgPHX[i]=mean(smp.lattice.phonons[1,:])
+        # avgPHZ[i]=mean(smp.lattice.phonons[2,:])
 
-        avgPMX[i]=mean(smp.phononMomenta[1,:])
-        avgPMZ[i]=mean(smp.phononMomenta[2,:])
+        # avgPMX[i]=mean(smp.phononMomenta[1,:])
+        # avgPMZ[i]=mean(smp.phononMomenta[2,:])
 
-        avgSX[i]=mean(smp.lattice.expVals[1,:])
-        avgSY[i]=mean(smp.lattice.expVals[2,:])
-        avgSZ[i]=mean(smp.lattice.expVals[3,:])
+        # avgSX[i]=mean(smp.lattice.expVals[1,:])
+        # avgSY[i]=mean(smp.lattice.expVals[2,:])
+        # avgSZ[i]=mean(smp.lattice.expVals[3,:])
 
-        phx1[i]=smp.lattice.phonons[1,1]
-        phz1[i]=smp.lattice.phonons[2,1]
+        # phx1[i]=smp.lattice.phonons[1,1]
+        # phz1[i]=smp.lattice.phonons[2,1]
 
 
 
@@ -123,13 +129,16 @@ function runMD(filename)
         measureEvObservables!(smp, spinEnergy/length(m.lattice), phononEnergy/length(m.lattice), coupledEnergy/length(m.lattice), energy/length(m.lattice))
     end
 
-    # outfile="test.h5"
-    # outfile*=string(n)
-    # writeSMP(outfile,smp)
-    return smp, avgSX, avgSY, avgSZ, avgPHX, avgPHZ, avgPMX, avgPMZ
+    writeSMP(outfile,smp)
+    # return smp, avgSX, avgSY, avgSZ, avgPHX, avgPHZ, avgPMX, avgPMZ
 
 
 end
+
+
+file="pseudoSpin--dimlessVars--T=1.h5."
+outfile="pseudoDynamics--dimlessVars--T=1.h5."
+runMD(file,outfile)
 
 # totalSX = zeros(5000)
 # totalSY = zeros(5000)
@@ -140,7 +149,7 @@ end
 # totalPMZ = zeros(5000)
 
 
-# for i in 1:2
+# for i in 1:40
 #     file = string("data/pseudoSpin-T=4.h5.", string(i-1))
 #     smp, SX, SY, SZ, PHX, PHZ, PMX, PMZ = runMD(file)
 
@@ -161,8 +170,3 @@ end
 # avgPHZ = totalPHZ./40
 # avgPMX = totalPMX./40
 # avgPMZ = totalPMZ./40
-
-
-file="data/pseudoSpin--dimlessVars--orderParam.h5.0"
-smp, SX, SY, SZ, PHX, PHZ, PMX, PMZ = runMD(file)
-

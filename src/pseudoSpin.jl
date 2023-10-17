@@ -93,25 +93,28 @@ function makeLattice(dim::Int,  phdim::Int)
     uc = UnitCell(a1,a2,a3)
     
 
+    g4=1.0
+    g3=5.0
+    g2=40.0
 
 
     K0=-1.0
-    K1=0.4
-    K2=0.2
+    K1=0.1
+    K2=0.05
 
     Phi=0.0
-    xyInteraction=1.0*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
+    xyInteraction=g4*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
     0 K0 0
     (K1-K2)*sin(Phi)*cos(Phi) 0 K2*cos(Phi)^2+K1*sin(Phi)^2 ]
 
     Phi=4pi/3
-    xzInteraction=1.0*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
+    xzInteraction=g4*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
     0 K0 0
     (K1-K2)*sin(Phi)*cos(Phi) 0 K2*cos(Phi)^2+K1*sin(Phi)^2 ]
 
 
     Phi=2pi/3
-    yzInteraction=1.0*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
+    yzInteraction=g4*[K1*cos(Phi)^2+K2*sin(Phi)^2 0.0 (K1-K2)*sin(Phi)*cos(Phi)
     0 K0 0
     (K1-K2)*sin(Phi)*cos(Phi) 0 K2*cos(Phi)^2+K1*sin(Phi)^2 ]
 
@@ -128,13 +131,13 @@ function makeLattice(dim::Int,  phdim::Int)
     addInteraction!(uc,gens,1,1,yzInteraction,1,(0,0,1))
     addInteraction!(uc,gens,1,1,yzInteraction,1,(-1,1,0))
 
-    Lsize=(4, 4, 4)
+    Lsize=(10, 10, 10)
     lattice=Lattice(uc,Lsize,dim,phdim) 
 
 
 
-    spring = [1.0,1.0]
-    mat =-1.0*[1.0  0.0
+    spring = [g2,g2]
+    mat =-g3*[1.0  0.0
                0.0  0.0
                0.0  1.0]
     addSpringConstant!(lattice, spring, phdim)
@@ -159,7 +162,7 @@ function runMC(T)
     # tmin=1.0
     # tmax=8.0
     # T=LinRange(tmin, tmax, commSize)[commRank+1]
-    T=1.0
+    # T=4.0
 
     TQ=0.4
     beta=1.0/T
@@ -168,10 +171,10 @@ function runMC(T)
 
     lattice.Qmax=10.0
 
-
+    outf=string("pseudoSpin--dimlessVars--T=",T,".h5")
 
     m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,dim,replicaExchangeRate=10)
-    run!(m,gens,dim, phdim,outfile="pseudoSpin-T=1.h5")
+    run!(m,gens,dim, phdim,outfile=outf)
     # e,e2=means(m.observables.energy)
     # print("Final Average energy: ", e, "\nFinal Average energy squared: ", e2, "\n")
 
@@ -190,7 +193,7 @@ end
 # Tvals = LinRange(2.0, 6.0, Tpoints)
 # heat = zeros(Tpoints)
 
-T=1.0
+T=parse(Float64,ARGS[1])
 m,gens=runMC(T)
 
 

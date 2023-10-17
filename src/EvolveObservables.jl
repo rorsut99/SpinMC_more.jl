@@ -3,9 +3,11 @@ using BinningAnalysis
 mutable struct EvolveObservables
 
 
-    spinStates::FullBinner{Matrix{Float64}}
-    phononPosition::FullBinner{Matrix{Float64}}
-    phononMomenta::FullBinner{Matrix{Float64}}
+    avgSX::Vector{Float64}
+    avgSY::Vector{Float64}
+    avgSZ::Vector{Float64}
+    avgPhononQ::Vector{Vector{Float64}}
+    avgPhononP::Vector{Vector{Float64}}
     totalEnergySeries::Vector{Float64}
     spinEnergySeries::Vector{Float64}
     coupledEnergySeries::Vector{Float64}
@@ -17,9 +19,14 @@ end
 function initEvolveObservables()
     evsObs=EvolveObservables()
 
-    evsObs.spinStates=FullBinner(Matrix{Float64})
-    evsObs.phononPosition=FullBinner(Matrix{Float64})
-    evsObs.phononMomenta=FullBinner(Matrix{Float64})
+    evsObs.avgSX=Vector{Float64}()
+    evsObs.avgSY=Vector{Float64}()
+    evsObs.avgSZ=Vector{Float64}()
+
+    evsObs.avgPhononQ=Vector{Vector{Float64}}()
+    evsObs.avgPhononP=Vector{Vector{Float64}}()
+
+
     evsObs.spinEnergySeries=Vector{Float64}()
     evsObs.phononEnergySeries=Vector{Float64}()
     evsObs.coupledEnergySeries=Vector{Float64}()
@@ -69,20 +76,24 @@ function getEvEnergy(evs,gens::Generators, lattice)
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
 
         #field interaction
+        
         spinEnergy += dot(s0, getInteractionField(evs.lattice, site))
     end
 
     energy += spinEnergy
     energy += phEnergy
-
-    return spinEnergy, phEnergy, coupleEnergy, energy
+    return real(spinEnergy), real(phEnergy), real(coupleEnergy), real(energy)
 end
 
 
 function measureEvObservables!(evs, spinEnergy, phEnergy, coupleEnergy, energy)
-    push!(evs.obs.spinStates, evs.lattice.expVals)
-    push!(evs.obs.phononPosition, evs.lattice.phonons)
-    push!(evs.obs.phononMomenta, evs.phononMomenta)
+    push!(evs.obs.avgSX,real(mean(evs.lattice.expVals[1,:])))
+    push!(evs.obs.avgSY,real(mean(evs.lattice.expVals[2,:])))
+    push!(evs.obs.avgSZ,real(mean(evs.lattice.expVals[3,:])))
+    push!(evs.obs.avgPhononQ,real.(vec(mean(evs.lattice.phonons,dims=2))))
+    push!(evs.obs.avgPhononP,real.(vec(mean(evs.phononMomenta,dims=2))))
+
+
     push!(evs.obs.spinEnergySeries, spinEnergy)
     push!(evs.obs.phononEnergySeries, phEnergy)
     push!(evs.obs.coupledEnergySeries, coupleEnergy)

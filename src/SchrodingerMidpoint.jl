@@ -1,5 +1,6 @@
 using DifferentialEquations
 using Plots
+using JLD2
 #Constants and setup
 mutable struct SchrodingerMP
     Zi::Matrix{ComplexF64}
@@ -103,19 +104,19 @@ end
 
 
 function setQi!(smp,site,newState)
-    smp.Qi[:,site] = newState
+    smp.Qi[:,site] = real.(newState)
 end
 function getQi(smp,site)
     return(smp.Qi[:,site])
 end
 function setQf1!(smp,site,newState)
-    smp.Qf1[:,site] = newState
+    smp.Qf1[:,site] = real.(newState)
 end
 function getQf1(smp,site)
     return(smp.Qf1[:,site])
 end
 function setQm!(smp,site,newState)
-    smp.Qm[:,site] = newState
+    smp.Qm[:,site] = real.(newState)
 end
 function getQm(smp,site)
     return(smp.Qm[:,site])
@@ -124,19 +125,19 @@ end
 
 
 function setPi!(smp,site,newState)
-    smp.Pi[:,site] = newState
+    smp.Pi[:,site] = real.(newState)
 end
 function getPi(smp,site)
     return(smp.Pi[:,site])
 end
 function setPf1!(smp,site,newState)
-    smp.Pf1[:,site] = newState
+    smp.Pf1[:,site] = real.(newState)
 end
 function getPf1(smp,site)
     return(smp.Pf1[:,site])
 end
 function setPm!(smp,site,newState)
-    smp.Pm[:,site] = newState
+    smp.Pm[:,site] = real.(newState)
 end
 function getPm(smp,site)
     return(smp.Pm[:,site])
@@ -376,18 +377,13 @@ end
 
 
 
-function writeSMP(filename::String, smp)
-    h5open(filename, "w") do f
-        data = IOBuffer()
-        serialize(data, mc)
-        f["checkpoint"] = take!(data)
-    end
+function writeSMP(filename::String, smp::SchrodingerMP)
+    jldsave(filename;smp)
 end
 
 
 function readSMP(filename::String)
-    h5open(filename, "r") do f
-        data = IOBuffer(read(f["checkpoint"]))
-        return deserialize(data)
-    end
+    f = jldopen(filename, "r")
+    smp=f["smp"]
+    return(smp)
 end

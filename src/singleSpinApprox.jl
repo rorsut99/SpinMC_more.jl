@@ -11,8 +11,10 @@ function iterate(state,stateNext,heff,lamb,omega,phi,dt,t,omegaz,phiz,lambz,hnoi
     0 -1.0+0im]
 
     Ham=(heff+hnoise[2])*Sy+lamb*sin(omega*t+phi)*Sx+lambz*cos(omegaz*t+phiz)*Sz+hnoise[1]*Sx+hnoise[3]*Sz
+    
 
     stateMid=0.5*(state+stateNext)
+    
     stateNew=state-1im*dt*Ham*stateMid
 
     return(stateNew)
@@ -74,12 +76,18 @@ end
 
 
 
-state=[1.0+0.0im,0.0-1im]
-heff=-12.0
+state=[1.0+0.0im,-0.00+1im]
+
+# state=[1,-1+0.0im]
+state/=norm(state)
+
+heff=-0.0
 lamb=0.4
+
 omega=1.0
 phi=0.0
-lambz=-0.025
+lambz=-0.2
+
 omegaz=1.0
 phiz=0.0
 dt=0.01
@@ -123,3 +131,11 @@ tpoints=zeros(nIter)
 for i in 1:nIter
     tpoints[i]=dt*(i-1)
 end
+
+v=0.0002
+
+
+fitx=(lamb*omega/(heff^2+omega^2))*sin.(heff*tpoints)-(lamb*heff/(heff^2+omega^2))*sin.(omega*tpoints)
+
+
+fitz=(lamb*omega/(heff^2+omega^2))*cos.(heff*tpoints)-(lamb*omega/(heff^2+omega^2))*cos.(omega*tpoints)
