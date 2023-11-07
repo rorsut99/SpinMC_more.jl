@@ -30,6 +30,18 @@ function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rn
 end
 
 
+# """
+# proposes update of spin via normalization of a 'dim' length vector of Complex numbers
+# """
+# function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
+#     state=randn!(Random.GLOBAL_RNG,zeros(ComplexF64,dim))
+#     state/=norm(state)
+#     state*=sqrt(2)
+#     return(state)
+# end
+
+
+
 # function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
 #     vec=rand(Complex{Float64}, dim)
 #     return (vec/=LinearAlgebra.norm(vec))

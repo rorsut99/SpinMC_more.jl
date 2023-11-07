@@ -135,9 +135,11 @@ function runMD(filename,outfile)
 
 end
 
+T=ARGS[1]
 
-file="pseudoSpin--dimlessVars--T=1.h5."
-outfile="pseudoDynamics--dimlessVars--T=1.h5."
+
+file=string("pseudoSpinMCdatT=",T,"/pseudoSpin--dimlessVars--T=",T,".h5.")
+outfile=string("pseudoDynamics--dimlessVars--T=",T,".h5.")
 runMD(file,outfile)
 
 # totalSX = zeros(5000)

@@ -162,7 +162,7 @@ end
 # avgPMX = totalPMX./40
 # avgPMZ = totalPMZ./40
 
-
-file="data/pseudoSpin--dimlessVars--orderParam.h5.0"
-smp, SX, SY, SZ, PHX, PHZ, PMX, PMZ = runMD(file)
+file1="data/pseudoSpin--dimlessVars--orderParam.h5.0"
+file2="strongQuadDat/pseudoSpin--strongQuad.h5..0"
+smp, SX, SY, SZ, PHX, PHZ, PMX, PMZ = runMD(file1)
 

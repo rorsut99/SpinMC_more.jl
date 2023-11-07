@@ -227,7 +227,7 @@ function runMC(T)
 
     # run Monte Carlo sweeps
     m=MonteCarlo(lattice,beta,thermSweeps,sampleSweeps,dim,replicaExchangeRate=10)
-    run!(m,gens,dim, phdim,outfile="simulation.h5")
+    run!(m,gens,dim, phdim)
     e,e2=means(m.observables.energy)
 
     # write(file, string("MC PARAMETERS-----------------------------------\n"))

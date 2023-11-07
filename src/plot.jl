@@ -18,16 +18,18 @@ function plotDat()
     peak=0
 
 
-    Tpoints=40
+    Tpoints=30
     Tvals=zeros(Tpoints)
     dheat=zeros(Tpoints)
     My=zeros(Tpoints)
+    Mx=zeros(Tpoints)
+    Mz=zeros(Tpoints)
     dM=zeros(Tpoints)
 
     heat = zeros(Tpoints)
     energy = zeros(Tpoints)
-    for i in 0:39
-        stem="data/pseudoSpin--dimlessVars--orderParam.h5."
+    for i in 0:29
+        stem="strongQuadDat/pseudoSpin--strongQuad--K1=1.h5.."
         app=string(i)
         filename=stem*app
         m = readMonteCarlo(filename)
@@ -48,6 +50,8 @@ function plotDat()
         dheat[i+1] = std_error(m.observables.energy, ∇c)
         Tvals[i+1]=1.0/beta
         My[i+1]=mean(m.observables.my)[1]
+        Mx[i+1]=mean(m.observables.mx)[1]
+        Mz[i+1]=mean(m.observables.mz)[1]
         dM[i+1]= std_error(m.observables.my)
 
 
@@ -63,15 +67,16 @@ function plotDat()
     print(peakPos)
 
     # plot energy vs sweeps
-    # plot(Tvals,heat,yerr=dheat,label="Coupling")
-    # print(heat)
-    # xlabel!("T (J)")
-    # ylabel!("C")
+    plot!(Tvals,heat,yerr=dheat,label="Coupling")
+    print(heat)
+    xlabel!("T (J)")
+    ylabel!("C")
 
     # plot Y-Magnetization
-    plot(Tvals,abs.(My),yerr=dM,label="")
-    xlabel!("T (J)")
-    ylabel!("My")
+    # plot!(Tvals,abs.(My),yerr=dM,label="My")
+    # xlabel!("T (J)")
+    # ylabel!("My")
+    # return(Tvals,My,Mx,Mz)
 end 
 
 plotDat()
