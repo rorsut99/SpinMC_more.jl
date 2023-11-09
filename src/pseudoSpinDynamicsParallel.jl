@@ -123,7 +123,7 @@ function runMD(filename,outfile)
 
 
 
-        evolveSMP!(smp,smp.lattice,gens,3)
+        evolveSMP!(smp,smp.lattice,gens,2)
 
         spinEnergy, phononEnergy, coupledEnergy, energy = getEvEnergy(smp,gens,smp.lattice)
         measureEvObservables!(smp, spinEnergy/length(m.lattice), phononEnergy/length(m.lattice), coupledEnergy/length(m.lattice), energy/length(m.lattice))

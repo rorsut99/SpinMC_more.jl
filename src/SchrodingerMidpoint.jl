@@ -144,6 +144,12 @@ function getPm(smp,site)
 end
 
 
+function addPhononDrive!(smp,driveFunctions,phd)
+    length(driveFunctions) == (phd) || error(string("Phonon drive functions must be of size ",phd,"."))
+    smp.phononDrive = driveFunctions
+end
+
+
 
 function updateHZm!(smp, lattice, gens)
     for site in 1:length(lattice)
@@ -225,6 +231,11 @@ function fullEvolve!(smp,lattice,gens,phdim)
 
         Qf = Q0 + (smp.dt)*Pm./smp.phononMass-(smp.dt)*smp.phononDamp.*Qm
         Pf = P0 - (smp.dt)*smp.lattice.springConstants.*Qm - (smp.dt)*transpose(coupling)*Sm
+
+        for i in 1:phdim
+        Pf[i] += smp.dt*smp.phononDrive[i](smp.timeStep[1]+smp.dt/2)
+        end
+
         setQf1!(smp,site,Qf)
         setPf1!(smp,site,Pf)
     end
