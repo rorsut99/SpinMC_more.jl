@@ -158,9 +158,9 @@ end
 
 function addPhononInteraction!(lattice::Lattice{D,N,dim,phdim},order::Int64,gens::Generators,M::Matrix{Float64}) where {D,N,dim,phdim}
     # size(M) == (d^2-1,phd) || error(string("Coupling matrix must be of size ",d^2-1,"x",phd,"."))
-    coupling = couplingMatrix(gens,order, M, dim, phdim)
+    # coupling = couplingMatrix(gens,order, M, dim, phdim)
 
-    lattice.phononCoupling=coupling
+    lattice.phononCoupling=M
 end
 
 function addSpringConstant!(lattice::Lattice{D,N,dim,phdim},vec::Vector{Float64},phd::Int64) where {D,N,dim,phdim}

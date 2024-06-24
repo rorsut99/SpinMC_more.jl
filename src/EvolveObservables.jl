@@ -6,6 +6,7 @@ mutable struct EvolveObservables
     avgSX::Vector{Float64}
     avgSY::Vector{Float64}
     avgSZ::Vector{Float64}
+    avgExpVals::Vector{Vector{ComplexF64}}
     avgPhononQ::Vector{Vector{Float64}}
     avgPhononP::Vector{Vector{Float64}}
     totalEnergySeries::Vector{Float64}
@@ -22,6 +23,8 @@ function initEvolveObservables()
     evsObs.avgSX=Vector{Float64}()
     evsObs.avgSY=Vector{Float64}()
     evsObs.avgSZ=Vector{Float64}()
+
+    evsObs.avgExpVals=Vector{Vector{Float64}}()
 
     evsObs.avgPhononQ=Vector{Vector{Float64}}()
     evsObs.avgPhononP=Vector{Vector{Float64}}()
@@ -90,6 +93,7 @@ function measureEvObservables!(evs, spinEnergy, phEnergy, coupleEnergy, energy)
     push!(evs.obs.avgSX,real(mean(evs.lattice.expVals[1,:])))
     push!(evs.obs.avgSY,real(mean(evs.lattice.expVals[2,:])))
     push!(evs.obs.avgSZ,real(mean(evs.lattice.expVals[3,:])))
+    push!(evs.obs.avgExpVals,real.(vec(mean(evs.lattice.expVals,dims=2))))
     push!(evs.obs.avgPhononQ,real.(vec(mean(evs.lattice.phonons,dims=2))))
     push!(evs.obs.avgPhononP,real.(vec(mean(evs.phononMomenta,dims=2))))
 

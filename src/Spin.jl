@@ -14,38 +14,28 @@ proposes update of spin state. There are two methods of proposing new spins: per
 using a randomly chosen generator, or picking 2*dim random numbers.
 Note: the rotation method is slower due to the exponential of a matrix, but converges faster
 """
+# function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
+#     s1=getSpin(lattice, site)
+#     genIn=rand(1:gens.dim^2-1)
+#     gen=gens.generators[genIn]
+
+#     phi = 2.0 * pi * rand()
+#     rot=exp(1im*phi*gen)
+
+#     ret=rot*s1
+#     ret/=norm(ret)
+#     ret*=sqrt(2)
+
+#     return (ret)
+# end
+
+
 function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
-    s1=getSpin(lattice, site)
-    genIn=rand(1:gens.dim^2-1)
-    gen=gens.generators[genIn]
-
-    phi = 2.0 * pi * rand()
-    rot=exp(1im*phi*gen)
-
-    ret=rot*s1
-    ret/=norm(ret)
-    ret*=sqrt(2)
-
-    return (ret)
+    state=randn!(Random.GLOBAL_RNG,zeros(ComplexF64,dim))
+    state/=norm(state)
+    # state*=sqrt(2)
+    return(state)
 end
-
-
-# """
-# proposes update of spin via normalization of a 'dim' length vector of Complex numbers
-# """
-# function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
-#     state=randn!(Random.GLOBAL_RNG,zeros(ComplexF64,dim))
-#     state/=norm(state)
-#     state*=sqrt(2)
-#     return(state)
-# end
-
-
-
-# function proposeUpdate(site,lattice::Lattice{D,N,dim,phdim},gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim} 
-#     vec=rand(Complex{Float64}, dim)
-#     return (vec/=LinearAlgebra.norm(vec))
-# end
 
 # function proposeUpdate(site::Int64, lattice::Lattice{D,N,dim,phdim}, gens::Generators, rng = Random.GLOBAL_RNG) where {D,N,dim,phdim}
 #     theta = rand(2)
@@ -127,7 +117,7 @@ function getEnergy(lattice::Lattice{D,N,dim,phdim}, gens::Generators)::Float64 w
        # energy += exchangeEnergy(s0, getInteractionOnsite(lattice, site), s0)
 
         #field interaction
-        #energy += dot(s0, getInteractionField(lattice, site))
+        energy += dot(s0, getInteractionField(lattice, site))
     end
     abs(energy.im) < 1e-6 || error(string("Imaginary part of total energy is too large."))
     return real(energy)
@@ -189,7 +179,8 @@ function getSpinEnergyDifference(lattice::Lattice{D,N,dim,phdim}, gens::Generato
     #dE += exchangeEnergy(newState, interactionOnsite, newState) - exchangeEnergy(oldState, interactionOnsite, oldState)
 
     #field interaction
-    #dE += dot(ds, getInteractionField(lattice, site))
+    E1 += dot(s1, getInteractionField(lattice, site))
+    E2 += dot(s2, getInteractionField(lattice, site))
     dE=E1-E2
     abs(dE.im) < 1e-6 || error(string("Imaginary part of spin energy change is too large."))
     return real(dE)
