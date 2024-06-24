@@ -122,7 +122,6 @@ function makeLattice(dim::Int, dim2::Int, phdim::Int)
     end
     setGenReps!(gens)
 
-
     uc = UnitCell(a1,a2)
     FMint = Matrix(-1.0I,3,3)      # Heisenberg interaction
     AFMint = Matrix(1.0I,3,3)      # Heisenberg interaction
